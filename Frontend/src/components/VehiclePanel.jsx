@@ -3,7 +3,6 @@ const rideOptions = [
     type: "car",
     name: "GoNexiCar",
     seats: 4,
-    eta: "2 mins away",
     copy: "Comfortable city rides",
     icon: "ri-car-line",
     tone: "bg-gonexi-gradient",
@@ -12,7 +11,6 @@ const rideOptions = [
     type: "moto",
     name: "GoNexiMoto",
     seats: 1,
-    eta: "3 mins away",
     copy: "Fast point-to-point travel",
     icon: "ri-motorbike-line",
     tone: "bg-gonexi-secondary",
@@ -21,7 +19,6 @@ const rideOptions = [
     type: "auto",
     name: "GoNexiAuto",
     seats: 3,
-    eta: "3 mins away",
     copy: "Affordable everyday rides",
     icon: "ri-truck-line",
     tone: "bg-gonexi-accent",
@@ -29,10 +26,13 @@ const rideOptions = [
 ]
 
 const VehiclePanel = (props) => {
-  const chooseVehicle = (type) => {
+  const chooseVehicle = async (type) => {
+    const liveOption = props.rideOptions?.find((option) => option.type === type)
+    if (liveOption && !liveOption.isAvailable) return
+
+    await props.selectVehicle(type)
     props.setConfirmRidePanel(true)
     props.setVehiclePanel(false)
-    props.selectVehicle(type)
     localStorage.setItem("vehicleType", type)
   }
 
@@ -54,12 +54,19 @@ const VehiclePanel = (props) => {
       </div>
 
       <div className="grid gap-3">
-        {rideOptions.map((option) => (
+        {rideOptions.map((option) => {
+          const liveOption = props.rideOptions?.find((item) => item.type === option.type)
+          const availableCaptains = liveOption?.availableCaptains ?? 0
+          const eta = liveOption?.estimatedPickupMinutes ? `${liveOption.estimatedPickupMinutes} min pickup` : "No captains nearby"
+          const isAvailable = liveOption?.isAvailable ?? false
+
+          return (
           <button
             key={option.type}
             type="button"
             onClick={() => chooseVehicle(option.type)}
-            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-gonexi-primary hover:shadow-gonexi"
+            disabled={!isAvailable}
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-gonexi-primary hover:shadow-gonexi disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 disabled:hover:border-slate-200 disabled:hover:shadow-none"
           >
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${option.tone}`}>
               <i className={`${option.icon} text-xl text-white`}></i>
@@ -69,18 +76,18 @@ const VehiclePanel = (props) => {
                 <h4 className="font-bold text-slate-900">{option.name}</h4>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
                   <i className="ri-user-3-fill mr-1"></i>
-                  {option.seats}
+                  {availableCaptains}
                 </span>
               </div>
-              <p className="mt-1 text-sm font-medium text-slate-500">{option.eta}</p>
+              <p className="mt-1 text-sm font-medium text-slate-500">{eta}</p>
               <p className="text-sm text-slate-400">{option.copy}</p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-black text-gonexi-primary">Rs. {props.fare?.[option.type] ?? "--"}</p>
+              <p className="text-xl font-black text-gonexi-primary">Rs. {liveOption?.fare ?? props.fare?.[option.type] ?? "--"}</p>
               <i className="ri-arrow-right-line text-slate-300 transition group-hover:text-gonexi-primary"></i>
             </div>
           </button>
-        ))}
+        )})}
       </div>
     </div>
   )

@@ -1,7 +1,84 @@
 const rideModel = require('../models/ride.model');
+const captainModel = require('../models/captain.model');
 const mapService = require('./maps.service');
 const crypto = require('crypto');
 const { getFrontendBaseUrl, getStripeClient } = require('./stripe.service');
+
+const DISPATCH_RADIUS_KM = 15;
+const CAPTAIN_HEARTBEAT_WINDOW_MS = 90 * 1000;
+
+const toRadians = (value) => (value * Math.PI) / 180;
+
+const getDistanceKm = (origin, destination) => {
+    if (![origin?.lat, origin?.lng, destination?.lat, destination?.lng].every(Number.isFinite)) {
+        return null;
+    }
+
+    const earthRadiusKm = 6371;
+    const latDelta = toRadians(destination.lat - origin.lat);
+    const lngDelta = toRadians(destination.lng - origin.lng);
+    const a =
+        Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+        Math.cos(toRadians(origin.lat)) *
+        Math.cos(toRadians(destination.lat)) *
+        Math.sin(lngDelta / 2) *
+        Math.sin(lngDelta / 2);
+
+    return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+const getConfidenceLabel = (score) => {
+    if (score >= 80) return 'High';
+    if (score >= 55) return 'Medium';
+    return 'Low';
+}
+
+const getDemandLevel = (rideCount) => {
+    if (rideCount >= 8) return 'High demand';
+    if (rideCount >= 3) return 'Active zone';
+    return 'Normal demand';
+}
+
+const vehicleLabels = {
+    car: 'GoNexiCar',
+    moto: 'GoNexiMoto',
+    auto: 'GoNexiAuto',
+}
+
+const getOnlineCaptainQuery = () => ({
+    status: 'active',
+    socketId: { $exists: true, $nin: [null, ''] },
+    lastSeenAt: { $gte: new Date(Date.now() - CAPTAIN_HEARTBEAT_WINDOW_MS) },
+    'location.lat': { $exists: true },
+    'location.lng': { $exists: true },
+});
+
+module.exports.findMatchingCaptainsForPickup = async ({ pickup, vehicleType }) => {
+    if (!pickup || !vehicleType) {
+        throw new Error('Pickup and vehicle type are required');
+    }
+
+    const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+    const captains = await captainModel.find({
+        ...getOnlineCaptainQuery(),
+        'vehicle.vehicleType': vehicleType,
+    });
+
+    const matchingCaptains = captains
+        .map((captain) => ({
+            captain,
+            distanceKm: getDistanceKm(captain.location, pickupCoordinates),
+        }))
+        .filter((entry) => entry.distanceKm !== null && entry.distanceKm <= DISPATCH_RADIUS_KM)
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .map((entry) => {
+            entry.captain.pickupDistanceKm = Number(entry.distanceKm.toFixed(1));
+            return entry.captain;
+        });
+
+    return { pickupCoordinates, matchingCaptains };
+}
+
 
 async function getFare(pickup, destination) {
 
@@ -103,7 +180,128 @@ module.exports.findAvailableRidesForCaptain = async ({ captain, limit = 10 }) =>
         .sort({ createdAt: -1, _id: -1 })
         .limit(limit);
 
-    return rides;
+    const rankedRides = await Promise.all(rides.map(async (ride) => {
+        const rideObject = ride.toObject();
+        let pickupCoordinates = null;
+        let pickupDistanceKm = null;
+
+        try {
+            pickupCoordinates = await mapService.getAddressCoordinate(ride.pickup);
+            pickupDistanceKm = getDistanceKm(captain.location, pickupCoordinates);
+        } catch (error) {
+            pickupCoordinates = null;
+        }
+
+        const distanceScore = pickupDistanceKm === null
+            ? 45
+            : Math.max(0, 100 - Math.round(pickupDistanceKm * 9));
+        const fareScore = Math.min(35, Math.round((ride.fare || 0) / 45));
+        const freshnessScore = Math.max(0, 20 - Math.floor((Date.now() - ride.createdAt.getTime()) / 60000));
+        const matchScore = Math.min(100, distanceScore + fareScore + freshnessScore);
+
+        return {
+            ...rideObject,
+            pickupCoordinates,
+            pickupDistanceKm: pickupDistanceKm === null ? null : Number(pickupDistanceKm.toFixed(1)),
+            estimatedPickupMinutes: pickupDistanceKm === null ? null : Math.max(2, Math.round(pickupDistanceKm * 3)),
+            matchScore,
+            matchLabel: getConfidenceLabel(matchScore),
+            matchReasons: [
+                pickupDistanceKm === null ? 'Pickup distance unavailable' : `${pickupDistanceKm.toFixed(1)} km pickup`,
+                `Rs. ${ride.fare} fare`,
+                vehicleType === captain.vehicle?.vehicleType ? 'Vehicle type match' : 'Vehicle type check',
+            ],
+        };
+    }));
+
+    return rankedRides.sort((a, b) => b.matchScore - a.matchScore);
+}
+
+module.exports.getRideConfidence = async ({ pickup, destination, vehicleType }) => {
+    if (!pickup || !destination || !vehicleType) {
+        throw new Error('Pickup, destination, and vehicle type are required');
+    }
+
+    const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+    const nearbyCaptains = await captainModel.find({
+        ...getOnlineCaptainQuery(),
+        'vehicle.vehicleType': vehicleType,
+    });
+
+    const captainsWithDistance = nearbyCaptains
+        .map((captain) => ({
+            captain,
+            distanceKm: getDistanceKm(captain.location, pickupCoordinates),
+        }))
+        .filter((entry) => entry.distanceKm !== null)
+        .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    const nearbyCount = captainsWithDistance.filter((entry) => entry.distanceKm <= DISPATCH_RADIUS_KM).length;
+    const closestDistanceKm = captainsWithDistance[0]?.distanceKm ?? null;
+    const activePendingRides = await rideModel.countDocuments({
+        status: 'pending',
+        vehicleType,
+    });
+
+    let score = 35;
+    score += Math.min(35, nearbyCount * 12);
+    score += closestDistanceKm === null ? 0 : Math.max(0, 20 - Math.round(closestDistanceKm * 2));
+    score -= Math.min(20, Math.max(0, activePendingRides - nearbyCount) * 4);
+    score = Math.max(10, Math.min(95, score));
+
+    return {
+        score,
+        label: getConfidenceLabel(score),
+        expectedWaitMinutes: nearbyCount > 0 ? Math.max(2, Math.round((closestDistanceKm || 1) * 2.5)) : 8,
+        nearbyCaptains: nearbyCount,
+        activePendingRides,
+        demandLevel: getDemandLevel(activePendingRides),
+        pickupCoordinates,
+        insights: [
+            nearbyCount > 0 ? `${nearbyCount} matching captain${nearbyCount === 1 ? '' : 's'} nearby` : 'No nearby matching captain currently active',
+            closestDistanceKm === null ? 'Closest pickup distance unavailable' : `Closest captain about ${closestDistanceKm.toFixed(1)} km away`,
+            getDemandLevel(activePendingRides),
+        ],
+    };
+}
+
+module.exports.getRideOptions = async ({ pickup, destination }) => {
+    if (!pickup || !destination) {
+        throw new Error('Pickup and destination are required');
+    }
+
+    const [fare, pickupCoordinates] = await Promise.all([
+        getFare(pickup, destination),
+        mapService.getAddressCoordinate(pickup),
+    ]);
+
+    const activeCaptains = await captainModel.find(getOnlineCaptainQuery());
+
+    return ['car', 'moto', 'auto'].map((vehicleType) => {
+        const matchingCaptains = activeCaptains
+            .filter((captain) => captain.vehicle?.vehicleType === vehicleType)
+            .map((captain) => ({
+                distanceKm: getDistanceKm(captain.location, pickupCoordinates),
+            }))
+            .filter((entry) => entry.distanceKm !== null)
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+        const availableCaptains = matchingCaptains.filter((entry) => entry.distanceKm <= DISPATCH_RADIUS_KM);
+        const closestDistanceKm = matchingCaptains[0]?.distanceKm ?? null;
+        const estimatedPickupMinutes = closestDistanceKm === null
+            ? null
+            : Math.max(2, Math.round(closestDistanceKm * 3));
+
+        return {
+            type: vehicleType,
+            name: vehicleLabels[vehicleType],
+            fare: fare[vehicleType],
+            availableCaptains: availableCaptains.length,
+            closestDistanceKm: closestDistanceKm === null ? null : Number(closestDistanceKm.toFixed(1)),
+            estimatedPickupMinutes,
+            isAvailable: availableCaptains.length > 0,
+        };
+    });
 }
 
 module.exports.cancelPendingRideForUser = async ({ rideId, userId }) => {

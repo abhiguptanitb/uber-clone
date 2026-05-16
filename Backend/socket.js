@@ -26,6 +26,7 @@ function initializeSocket(server) {
             await captainModel.findByIdAndUpdate(userId, {
             socketId: socket.id,
             status: "active", // Set captain as active when they connect
+            lastSeenAt: new Date(),
             })
             console.log(`Captain ${userId} updated with socket ${socket.id} and set to active`)
         }
@@ -44,9 +45,26 @@ function initializeSocket(server) {
             lng: location.lng,
             },
             status: "active", // Ensure captain stays active when updating location
+            lastSeenAt: new Date(),
         })
 
         console.log(`Captain ${userId} location updated:`, location)
+        })
+
+        socket.on("captain-offline", async (data) => {
+        const { userId } = data || {}
+
+        if (!userId) {
+            return
+        }
+
+        await captainModel.findByIdAndUpdate(userId, {
+            status: "inactive",
+            socketId: null,
+            lastSeenAt: new Date(),
+        })
+
+        console.log(`Captain ${userId} set to inactive`)
         })
 
         socket.on("update-location-user", async (data) => {

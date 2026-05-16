@@ -33,6 +33,9 @@ const captainSchema = new mongoose.Schema({
     socketId: {
         type: String,
     },
+    lastSeenAt: {
+        type: Date,
+    },
 
     status: {
         type: String,

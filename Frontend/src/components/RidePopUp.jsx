@@ -54,10 +54,7 @@ const RidePopUp = (props) => {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <button
-          onClick={() => {
-            props.setConfirmRidePopupPanel(true)
-            props.confirmRide()
-          }}
+          onClick={props.confirmRide}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gonexi-gradient px-5 py-4 font-bold text-white shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg"
         >
           <i className="ri-check-line"></i>

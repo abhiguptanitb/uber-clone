@@ -222,11 +222,14 @@ const CaptainHome = () => {
   }, [ride, socket])
 
   const confirmRide = async () => {
+    const rideId = ride?._id
+    if (!rideId) return
+
     try {
-      await axios.post(
+      const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/rides/confirm`,
         {
-          rideId: ride._id,
+          rideId,
           captainId: captain._id,
         },
         {
@@ -234,13 +237,17 @@ const CaptainHome = () => {
         },
       )
 
+      setRide(response.data)
       setRidePopupPanel(false)
       setConfirmRidePopupPanel(true)
-      setAvailableRides((currentRides) => currentRides.filter((availableRide) => availableRide._id !== ride._id))
+      setAvailableRides((currentRides) => currentRides.filter((availableRide) => availableRide._id !== rideId))
       setQueueNotice("")
     } catch (error) {
       console.error("Error confirming ride:", error)
       setRidePopupPanel(false)
+      setConfirmRidePopupPanel(false)
+      setAvailableRides((currentRides) => currentRides.filter((availableRide) => availableRide._id !== rideId))
+      if (ride?._id === rideId) setRide(null)
       setQueueNotice(error.response?.data?.message || "This ride is no longer available.")
       fetchAvailableRides({ includeDismissed: true })
     }
@@ -248,6 +255,10 @@ const CaptainHome = () => {
 
   const handleLogout = async () => {
     try {
+      socket.emit("captain-offline", {
+        userId: captain._id,
+      })
+
       await axios.get(`${import.meta.env.VITE_BASE_URL}/captains/logout`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
@@ -260,6 +271,13 @@ const CaptainHome = () => {
 
   const captainName = `${captain?.fullname?.firstname || "Captain"} ${captain?.fullname?.lastname || ""}`.trim()
   const hasReviewableRide = ride?.vehicleType === vehicleType && !confirmRidePopupPanel
+  const demandZones = availableRides.slice(0, 3).map((availableRide, index) => ({
+    id: availableRide._id,
+    label: index === 0 ? "Best zone" : `Zone ${index + 1}`,
+    pickup: availableRide.pickup?.split(",")[0] || "Pickup area",
+    score: availableRide.matchScore || Math.max(55, 85 - index * 12),
+    distance: availableRide.pickupDistanceKm,
+  }))
 
   const handleCheckQueue = () => {
     if (isCheckingQueue) return
@@ -320,7 +338,7 @@ const CaptainHome = () => {
               paidRidesToday={paidRidesToday}
             />
 
-            <section className="rounded-[28px] border border-white/70 bg-white p-5 shadow-gonexi-lg">
+            <section className="overflow-hidden rounded-[28px] border border-white/70 bg-white p-5 shadow-gonexi-lg">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Ride queue</p>
@@ -337,15 +355,61 @@ const CaptainHome = () => {
               </p>
               {availableRides.length > 0 && (
                 <div className="mt-4 grid gap-3">
+                  <div className="min-w-0 overflow-hidden rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">Captain heat zones</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">Head toward higher scoring pickup clusters for faster earnings.</p>
+                      </div>
+                      <i className="ri-fire-line text-2xl text-gonexi-accent"></i>
+                    </div>
+                    <div className="mt-3 grid min-w-0 gap-2">
+                      {demandZones.map((zone) => (
+                        <div key={zone.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm">
+                          <span className="min-w-0 truncate font-semibold text-slate-700" title={`${zone.label}: ${zone.pickup}`}>
+                            {zone.label}: {zone.pickup}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-gonexi-gradient px-2 py-1 text-xs font-black text-white">{zone.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   {availableRides.map((availableRide, index) => (
-                    <div key={availableRide._id} className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                    <div key={availableRide._id} className="min-w-0 overflow-hidden rounded-2xl border border-teal-100 bg-teal-50 p-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-900">Request #{index + 1}</p>
-                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                        <div className="min-w-0 overflow-hidden">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-bold text-slate-900">Request #{index + 1}</p>
+                            {index === 0 && (
+                              <span className="rounded-full bg-gonexi-gradient px-2 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-white">
+                                Best match
+                              </span>
+                            )}
+                            {availableRide.matchLabel && (
+                              <span className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-gonexi-primary">
+                                {availableRide.matchLabel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 break-words text-sm leading-6 text-slate-600">
                             {availableRide.pickup} to {availableRide.destination}
                           </p>
                           <p className="mt-2 text-sm font-bold text-gonexi-primary">Fare: Rs. {availableRide.fare}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                              Score {availableRide.matchScore ?? "--"}
+                            </span>
+                            {availableRide.pickupDistanceKm !== null && availableRide.pickupDistanceKm !== undefined && (
+                              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                                {availableRide.pickupDistanceKm} km pickup
+                              </span>
+                            )}
+                            {availableRide.estimatedPickupMinutes && (
+                              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+                                {availableRide.estimatedPickupMinutes} min ETA
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <i className="ri-route-line hidden text-2xl text-gonexi-primary md:block"></i>
                       </div>

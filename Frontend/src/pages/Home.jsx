@@ -24,11 +24,13 @@ const Home = () => {
   const [destinationSuggestions, setDestinationSuggestions] = useState([])
   const [activeField, setActiveField] = useState(null)
   const [fare, setFare] = useState({})
+  const [rideOptions, setRideOptions] = useState([])
   const [vehicleType, setVehicleType] = useState(localStorage.getItem("vehicleType") || null)
   const [ride, setRide] = useState(null)
   const [isPickupFromCurrentLocation, setIsPickupFromCurrentLocation] = useState(false)
   const [isApplyingMapLocation, setIsApplyingMapLocation] = useState(false)
   const [mapFocusLocation, setMapFocusLocation] = useState(null)
+  const [rideConfidence, setRideConfidence] = useState(null)
   const [pendingPaymentRide, setPendingPaymentRide] = useState(() => {
     const storedRide = localStorage.getItem("pendingPaymentRide")
     return storedRide ? JSON.parse(storedRide) : null
@@ -237,6 +239,36 @@ const Home = () => {
     }
   }
 
+  const fetchRideConfidence = async (nextVehicleType = vehicleType) => {
+    if (!pickup || !destination || !nextVehicleType) return null
+
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/confidence`, {
+        params: {
+          pickup,
+          destination,
+          vehicleType: nextVehicleType,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+
+      setRideConfidence(response.data)
+      return response.data
+    } catch (error) {
+      console.error("Error fetching ride confidence:", error)
+      setRideConfidence(null)
+      return null
+    }
+  }
+
+  const selectVehicleType = (nextVehicleType) => {
+    setVehicleType(nextVehicleType)
+    localStorage.setItem("vehicleType", nextVehicleType)
+    return fetchRideConfidence(nextVehicleType)
+  }
+
   const applyCurrentLocationToActiveField = async () => {
     if (isApplyingMapLocation) return
 
@@ -280,6 +312,32 @@ const Home = () => {
     }
   }
 
+  const applyMapClickToActiveField = async (location) => {
+    if (!location) return
+
+    const fieldToUpdate = activeField || "pickup"
+    setMapFocusLocation({ lat: location.lat, lng: location.lng, zoom: 15 })
+
+    try {
+      const result = await updateLocation(location.lat, location.lng)
+      const locationText = result.address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
+
+      if (fieldToUpdate === "destination") {
+        setDestination(locationText)
+        localStorage.setItem("destination", locationText)
+      } else {
+        setPickup(locationText)
+        setIsPickupFromCurrentLocation(false)
+        localStorage.setItem("pickup", locationText)
+        localStorage.setItem("isPickupFromCurrentLocation", "false")
+      }
+
+      setPanelOpen(false)
+    } catch (error) {
+      console.error("Error applying map location:", error)
+    }
+  }
+
   const findTrip = async () => {
     if (pendingPaymentRide?._id) {
       navigate(`/riding?ride_id=${pendingPaymentRide._id}`)
@@ -291,20 +349,62 @@ const Home = () => {
       return
     }
 
-    setVehiclePanel(true)
     setPanelOpen(false)
 
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/options`, {
         params: { pickup, destination },
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
-      setFare(response.data)
+      const options = response.data?.options || []
+      setRideOptions(options)
+      setFare(
+        options.reduce((nextFare, option) => ({
+          ...nextFare,
+          [option.type]: option.fare,
+        }), {}),
+      )
+      setVehiclePanel(true)
+      setRideConfidence(null)
     } catch (error) {
       console.error("Error getting fare:", error)
-      alert("Error getting fare. Please try again.")
+      const validationMessage = error.response?.data?.errors?.[0]?.msg
+      const serverMessage = error.response?.data?.message
+
+      if (error.response?.status === 400 && validationMessage === "Invalid ride id") {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
+            params: { pickup, destination },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+          const fallbackOptions = ["car", "moto", "auto"].map((type) => ({
+            type,
+            fare: response.data?.[type],
+            availableCaptains: 0,
+            closestDistanceKm: null,
+            estimatedPickupMinutes: null,
+            isAvailable: true,
+          }))
+
+          setRideOptions(fallbackOptions)
+          setFare(response.data || {})
+          setVehiclePanel(true)
+          setRideConfidence(null)
+          return
+        } catch (fallbackError) {
+          console.error("Error getting fallback fare:", fallbackError)
+          const fallbackValidationMessage = fallbackError.response?.data?.errors?.[0]?.msg
+          const fallbackServerMessage = fallbackError.response?.data?.message
+          alert(fallbackValidationMessage || fallbackServerMessage || "Error getting fare. Please try again.")
+          return
+        }
+      }
+
+      alert(validationMessage || serverMessage || "Error getting fare. Please try again.")
     }
   }
 
@@ -517,11 +617,37 @@ const Home = () => {
             {vehiclePanel && (
               <section className="rounded-[28px] border border-white/70 bg-white p-4 shadow-gonexi-lg md:p-5">
                 <VehiclePanel
-                  selectVehicle={setVehicleType}
+                  selectVehicle={selectVehicleType}
                   fare={fare}
+                  rideOptions={rideOptions}
                   setConfirmRidePanel={setConfirmRidePanel}
                   setVehiclePanel={setVehiclePanel}
                 />
+              </section>
+            )}
+
+            {rideConfidence && (
+              <section className="rounded-[28px] border border-white/70 bg-white p-5 shadow-gonexi-lg">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Ride confidence</p>
+                    <h2 className="mt-1 text-2xl font-black text-slate-900">{rideConfidence.label} match chance</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Expected match in {rideConfidence.expectedWaitMinutes}-{rideConfidence.expectedWaitMinutes + 2} min.
+                    </p>
+                  </div>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gonexi-gradient text-2xl font-black text-white shadow-gonexi">
+                    {rideConfidence.score}
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-2">
+                  {rideConfidence.insights?.map((insight) => (
+                    <div key={insight} className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
+                      <i className="ri-sparkling-2-line text-gonexi-primary"></i>
+                      {insight}
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 
@@ -541,7 +667,11 @@ const Home = () => {
           </aside>
 
           <section className="relative h-[560px] overflow-hidden rounded-[32px] border border-white/70 bg-slate-900 shadow-gonexi-lg lg:sticky lg:top-8 lg:h-[calc(100vh-11rem)] lg:min-h-[520px]">
-            <LiveTracking onLocationUpdate={handleLocationUpdate} focusLocation={mapFocusLocation} />
+            <LiveTracking
+              onLocationUpdate={handleLocationUpdate}
+              focusLocation={mapFocusLocation}
+              onMapClick={applyMapClickToActiveField}
+            />
             <div className="pointer-events-none absolute left-5 top-5 rounded-2xl bg-white/75 px-4 py-3 text-sm font-semibold text-slate-700 shadow-gonexi backdrop-blur">
               <i className="ri-radar-line mr-2 text-gonexi-success"></i>
               Tracking active
@@ -555,6 +685,10 @@ const Home = () => {
               <i className="ri-crosshair-2-line text-gonexi-primary"></i>
               {isApplyingMapLocation ? "Using location..." : `Use for ${activeField === "destination" ? "Destination" : "Pickup"}`}
             </button>
+            <div className="pointer-events-none absolute bottom-5 left-5 max-w-xs rounded-2xl bg-white/85 px-4 py-3 text-sm font-semibold text-slate-700 shadow-gonexi backdrop-blur">
+              <i className="ri-cursor-line mr-2 text-gonexi-primary"></i>
+              Click map to set {activeField === "destination" ? "destination" : "pickup"}
+            </div>
           </section>
         </main>
       </div>
@@ -568,6 +702,7 @@ const Home = () => {
               destination={destination}
               fare={fare}
               vehicleType={vehicleType}
+              rideConfidence={rideConfidence}
               setConfirmRidePanel={setConfirmRidePanel}
               setVehicleFound={setVehicleFound}
             />

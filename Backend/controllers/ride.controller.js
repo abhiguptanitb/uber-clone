@@ -1,6 +1,5 @@
 const rideService = require("../services/ride.service")
 const { validationResult } = require("express-validator")
-const mapService = require("../services/maps.service")
 const { sendMessageToSocketId } = require("../socket")
 const rideModel = require("../models/ride.model")
 
@@ -17,49 +16,24 @@ module.exports.createRide = async (req, res) => {
     const { pickup, destination, vehicleType } = req.body
 
     try {
-        const ride = await rideService.createRide({
-        user: req.user._id,
+    const { pickupCoordinates, matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
         pickup,
-        destination,
         vehicleType,
     })
-
-    // Fetch coordinates based on pickup location
-    const pickupCoordinates = await mapService.getAddressCoordinate(pickup)
     console.log("Pickup coordinates:", pickupCoordinates)
-
-    const captainsInRadius = await mapService.getCaptainsInTheRadius(
-        pickupCoordinates.lat,
-        pickupCoordinates.lng,
-        10000, // 10km radius
-    )
-
-    console.log("All captains in radius:", captainsInRadius.length)
-
-    // Filter captains by vehicle type and active status
-    const matchingCaptains = captainsInRadius.filter((captain) => {
-        const isVehicleMatch = captain.vehicle.vehicleType === vehicleType
-        const isActive = captain.status === "active"
-        const hasSocketId = captain.socketId
-
-        console.log(`Captain ${captain._id}:`, {
-            vehicleType: captain.vehicle.vehicleType,
-            requestedType: vehicleType,
-            isVehicleMatch,
-            isActive,
-            hasSocketId: !!hasSocketId,
-            socketId: captain.socketId,
-        })
-
-        return isVehicleMatch && isActive && hasSocketId
-    })
-
     console.log("Matching captains found:", matchingCaptains.length)
 
     if (matchingCaptains.length === 0) {
         console.log("No matching captains found for vehicle type:", vehicleType)
         return res.status(404).json({ message: "No drivers available for this vehicle type" })
     }
+
+    const ride = await rideService.createRide({
+        user: req.user._id,
+        pickup,
+        destination,
+        vehicleType,
+    })
 
     ride.otp = ""
 
@@ -118,7 +92,8 @@ module.exports.confirmRide = async (req, res) => {
         return res.status(200).json(ride)
     } catch (err) {
         console.log(err)
-        return res.status(500).json({ message: err.message })
+        const statusCode = err.message === 'Ride is no longer available' ? 409 : 500
+        return res.status(statusCode).json({ message: err.message })
     }
 }
 
@@ -163,6 +138,43 @@ module.exports.endRide = async (req, res) => {
         })
 
         return res.status(200).json(ride)
+    } catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+}
+
+module.exports.getRideConfidence = async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { pickup, destination, vehicleType } = req.query
+
+    try {
+        const confidence = await rideService.getRideConfidence({
+            pickup,
+            destination,
+            vehicleType,
+        })
+
+        return res.status(200).json(confidence)
+    } catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+}
+
+module.exports.getRideOptions = async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { pickup, destination } = req.query
+
+    try {
+        const options = await rideService.getRideOptions({ pickup, destination })
+        return res.status(200).json({ options })
     } catch (err) {
         return res.status(500).json({ message: err.message })
     }

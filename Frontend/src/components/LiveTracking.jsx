@@ -11,7 +11,7 @@ const DEFAULT_LOCATION = {
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
 
 // Update the component to handle default location:
-const LiveTracking = ({ onLocationUpdate, focusLocation, showStatusIndicator = false }) => {
+const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusIndicator = false }) => {
   const [currentPosition, setCurrentPosition] = useState(null)
   const [viewState, setViewState] = useState(null)
   const mapRef = useRef(null)
@@ -493,6 +493,7 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, showStatusIndicator = f
       <Map
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
+        onClick={(evt) => onMapClick?.({ lat: evt.lngLat.lat, lng: evt.lngLat.lng })}
         style={{ width: "100%", height: "100%" }}
         mapStyle="mapbox://styles/mapbox/streets-v11"
         mapboxAccessToken={MAPBOX_TOKEN}

@@ -6,6 +6,7 @@ const vehicleMeta = {
 
 const ConfirmRide = (props) => {
   const meta = vehicleMeta[props.vehicleType] || vehicleMeta.car
+  const confidence = props.rideConfidence
 
   return (
     <div className="p-3 md:p-5">
@@ -62,6 +63,22 @@ const ConfirmRide = (props) => {
             <div>
               <h3 className="font-bold text-slate-900">Payment</h3>
               <p className="mt-1 text-sm leading-6 text-slate-600">Pay securely after the trip is completed.</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-slate-900">Ride Confidence</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  {confidence
+                    ? `${confidence.label} chance of match in ${confidence.expectedWaitMinutes}-${confidence.expectedWaitMinutes + 2} min`
+                    : "Unable to calculate live confidence right now."}
+                </p>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-gonexi-primary shadow-sm">
+                {confidence?.score ?? "--"}
+              </div>
             </div>
           </div>
         </div>

@@ -6,6 +6,12 @@ const vehicleIcon = {
 
 const LookingForDriver = (props) => {
   const [icon, tone] = vehicleIcon[props.vehicleType] || vehicleIcon.car
+  const timeline = [
+    ["ri-checkbox-circle-line", "Requested", "Ride request created"],
+    ["ri-radar-line", "Matching", "Checking nearby captains"],
+    ["ri-steering-2-line", "Captain assigned", "Waiting for acceptance"],
+    ["ri-bank-card-line", "Payment", "After trip completion"],
+  ]
 
   return (
     <div>
@@ -31,6 +37,23 @@ const LookingForDriver = (props) => {
         </div>
         <div className="mx-auto mt-5 h-2 max-w-xs overflow-hidden rounded-full bg-slate-200">
           <div className="h-full w-2/3 animate-pulse rounded-full bg-gonexi-gradient"></div>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-3xl border border-slate-100 bg-white p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Ride timeline</p>
+        <div className="mt-4 grid gap-3">
+          {timeline.map(([iconName, title, copy], index) => (
+            <div key={title} className="flex items-center gap-3">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${index < 2 ? "bg-gonexi-gradient text-white" : "bg-slate-100 text-slate-400"}`}>
+                <i className={iconName}></i>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900">{title}</p>
+                <p className="text-xs text-slate-500">{copy}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

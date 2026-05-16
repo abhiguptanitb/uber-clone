@@ -93,6 +93,11 @@ module.exports.logoutCaptain = async (req, res, next) => {
     const token = req.cookies.token || req.headers.authorization?.split(' ')[ 1 ];
 
     await blackListTokenModel.create({ token });
+    await captainModel.findByIdAndUpdate(req.captain._id, {
+        status: 'inactive',
+        socketId: null,
+        lastSeenAt: new Date(),
+    });
 
     res.clearCookie('token');
 
