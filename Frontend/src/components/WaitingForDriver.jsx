@@ -1,74 +1,71 @@
-import React from 'react'
+const vehicleIcon = {
+  car: ["ri-car-line", "Maruti Suzuki Alto", "bg-gonexi-gradient"],
+  moto: ["ri-motorbike-line", "Splendor", "bg-gonexi-secondary"],
+  auto: ["ri-truck-line", "Bajaj Auto RE", "bg-gonexi-accent"],
+}
 
 const WaitingForDriver = (props) => {
-    return (
+  const [icon, model, tone] = vehicleIcon[props.vehicleType] || vehicleIcon.car
+
+  return (
     <div>
-        <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-            props.waitingForDriver(false)
-        }}><i className="text-3xl text-gray-400 ri-arrow-down-wide-line"></i></h5>
-
-        <div className='flex items-center justify-between'>
-
-                    {
-                        props.vehicleType === 'car' ? (
-                            <div className="w-12 h-12 bg-gonexi-gradient rounded-xl flex items-center justify-center">
-                                <i className="ri-car-line text-white text-xl"></i>
-                            </div>
-                        ) : props.vehicleType === 'moto' ? (
-                            <div className="w-12 h-12 bg-gonexi-secondary rounded-xl flex items-center justify-center">
-                                <i className="ri-motorbike-line text-white text-xl"></i>
-                            </div>
-                        ) : (
-                            <div className="w-12 h-12 bg-gonexi-accent rounded-xl flex items-center justify-center">
-                                <i className="ri-truck-line text-white text-xl"></i>
-                            </div>
-                        )
-                    }
-            <div className='text-right'>
-                <h2 className='text-lg font-medium capitalize'>{props.ride?.captain.fullname.firstname}</h2>
-                <h4 className='text-xl font-semibold -mt-1 -mb-1'>{props.ride?.captain.vehicle.plate}</h4>
-
-                {
-                        props.vehicleType === 'car' ? (
-                            <p className='text-sm text-gray-600'>Maruti Suzuki Alto</p>
-                        ) : props.vehicleType === 'moto' ? (
-                            <p className='text-sm text-gray-600'>Splendor</p>
-                        ) : (
-                            <p className='text-sm text-gray-600'>Bajaj Auto RE</p>
-                        )
-                    }
-                
-                <h1 className='text-lg font-semibold text-gonexi-primary'>OTP: {props.ride?.otp} </h1>
-            </div>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Driver assigned</p>
+          <h3 className="mt-1 text-3xl font-bold text-slate-900">Your ride is on the way</h3>
         </div>
+        <button
+          type="button"
+          onClick={() => props.setWaitingForDriver(false)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+          aria-label="Close driver details"
+        >
+          <i className="ri-close-line text-xl"></i>
+        </button>
+      </div>
 
-        <div className='flex gap-2 justify-between flex-col items-center'>
-            <div className='w-full mt-5'>
-            <div className='flex items-center gap-5 p-3 border-b-2'>
-                <i className="ri-map-pin-user-fill text-gonexi-primary"></i>
-                <div>
-                <h3 className='text-lg font-medium'>Pickup</h3>
-                <p className='text-sm -mt-1 text-gray-600'>{props.ride?.pickup}</p>
-                </div>
-            </div>
-            <div className='flex items-center gap-5 p-3 border-b-2'>
-                <i className="text-lg ri-map-pin-2-fill text-gonexi-secondary"></i>
-                <div>
-                <h3 className='text-lg font-medium'>Destination</h3>
-                <p className='text-sm -mt-1 text-gray-600'>{props.ride?.destination}</p>
-                </div>
-            </div>
-            <div className='flex items-center gap-5 p-3'>
-                <i className="ri-currency-line text-gonexi-accent"></i>
-                <div>
-                <h3 className='text-lg font-medium'>₹{props.ride?.fare} </h3>
-                <p className='text-sm -mt-1 text-gray-600'>Cash</p>
-                </div>
-            </div>
-            </div>
+      <div className="grid gap-4 rounded-3xl bg-slate-50 p-5 md:grid-cols-[1fr_auto] md:items-center">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${tone}`}>
+            <i className={`${icon} text-2xl text-white`}></i>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold capitalize text-slate-900">{props.ride?.captain?.fullname?.firstname}</h2>
+            <p className="text-sm text-slate-500">{model}</p>
+            <p className="mt-1 font-mono text-lg font-black text-slate-900">{props.ride?.captain?.vehicle?.plate}</p>
+          </div>
         </div>
+        <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">OTP</p>
+          <h1 className="mt-1 font-mono text-3xl font-black text-gonexi-primary">{props.ride?.otp}</h1>
         </div>
-    )
+      </div>
+
+      <div className="mt-5 grid gap-3">
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-map-pin-user-fill mt-1 text-gonexi-primary"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Pickup</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{props.ride?.pickup}</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-map-pin-2-fill mt-1 text-gonexi-secondary"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Destination</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{props.ride?.destination}</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-currency-line mt-1 text-gonexi-accent"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Rs. {props.ride?.fare}</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">Payment after trip</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default WaitingForDriver

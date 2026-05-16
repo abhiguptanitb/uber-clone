@@ -1,84 +1,69 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom"
 
 const Start = () => {
-    return (
-        <div>
-            <div className='bg-gonexi-gradient-light h-screen pt-8 flex justify-between flex-col w-full relative'>
-                {/* Gradient overlay for better text readability */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40"></div>
-                
-                {/* Logo and branding */}
-                <div className="relative z-10 ml-8">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-16 h-16 bg-gonexi-gradient rounded-2xl flex items-center justify-center shadow-gonexi-lg">
-                            <span className="text-white font-bold text-2xl">G</span>
-                        </div>
-                        <div>
-                            <h1 className="text-white text-2xl font-bold">GoNexi</h1>
-                            <p className="text-white/80 text-sm">Fast, Reliable, Everywhere</p>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Main content area - replacing image with text */}
-                <div className="flex-1 flex items-center justify-center px-4 sm:px-8 relative z-10">
-                    <div className="text-center text-white max-w-2xl w-full">
-                        <div className="mb-6 sm:mb-8">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 leading-tight">
-                                <span className="text-gray-800">Your Journey,</span><br />
-                                <span className="bg-gonexi-gradient bg-clip-text text-transparent">Our Priority</span>
-                            </h2>
-                            <p className="text-lg sm:text-xl text-gray-700 mb-6 leading-relaxed px-2 font-medium">
-                                Experience the future of transportation with GoNexi. 
-                                Safe, reliable, and always on time.
-                            </p>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                                <div className="w-12 h-12 bg-gonexi-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                                    <i className="ri-time-line text-white text-2xl"></i>
-                                </div>
-                                <h3 className="font-semibold text-gray-800 mb-1">Fast</h3>
-                                <p className="text-gray-600 text-sm">Quick pickups</p>
-                            </div>
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                                <div className="w-12 h-12 bg-gonexi-secondary rounded-lg flex items-center justify-center mx-auto mb-3">
-                                    <i className="ri-shield-check-line text-white text-2xl"></i>
-                                </div>
-                                <h3 className="font-semibold text-gray-800 mb-1">Safe</h3>
-                                <p className="text-gray-600 text-sm">Verified drivers</p>
-                            </div>
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                                <div className="w-12 h-12 bg-gonexi-accent rounded-lg flex items-center justify-center mx-auto mb-3">
-                                    <i className="ri-map-pin-line text-white text-2xl"></i>
-                                </div>
-                                <h3 className="font-semibold text-gray-800 mb-1">Reliable</h3>
-                                <p className="text-gray-600 text-sm">Always available</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Bottom section with call to action */}
-                <div className='bg-white/95 backdrop-blur-sm pb-6 sm:pb-8 py-4 sm:py-6 px-4 sm:px-6 relative z-10 rounded-t-3xl shadow-2xl'>
-                    <div className="text-center">
-                        <h2 className='text-2xl sm:text-3xl font-bold bg-gonexi-gradient bg-clip-text text-transparent mb-2'>
-                            Get Started with GoNexi
-                        </h2>
-                        <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Your journey, our priority</p>
-                        <Link 
-                            to='/login' 
-                            className='flex items-center justify-center w-full bg-gonexi-gradient text-white py-3 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg shadow-gonexi-lg hover:shadow-gonexi transform hover:scale-105 transition-all duration-200'
-                        >
-                            Continue Your Journey
-                        </Link>
-                    </div>
-                </div>
+  return (
+    <main className="min-h-screen bg-[#eef2f6] p-4 text-gonexi-dark md:p-6 lg:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1400px] overflow-hidden rounded-[36px] border border-white/70 bg-white/80 shadow-gonexi-lg backdrop-blur lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="flex flex-col justify-between gap-10 p-6 md:p-10 lg:p-12">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gonexi-gradient shadow-gonexi">
+              <span className="text-3xl font-black text-white">G</span>
             </div>
-        </div>
-    )
+            <div>
+              <h1 className="text-2xl font-black text-slate-950">GoNexi</h1>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Urban mobility desk</p>
+            </div>
+          </div>
+
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-gonexi-accent">Dispatch. Track. Pay.</p>
+            <h2 className="mt-4 text-5xl font-black leading-tight text-slate-950 md:text-6xl lg:text-7xl">
+              Ride operations with a cleaner cockpit.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+              Book passenger trips, match captains, track movement live, and complete payment flows from a full desktop workspace.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["ri-radar-line", "Live Map", "Track location without losing screen space."],
+              ["ri-route-line", "Fast Booking", "Pickup, destination, fare, and vehicle in one flow."],
+              ["ri-secure-payment-line", "Stripe Ready", "Keep pending payments visible and controlled."],
+            ].map(([icon, title, copy]) => (
+              <div key={title} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+                <i className={`${icon} text-3xl text-gonexi-primary`}></i>
+                <h3 className="mt-4 font-black text-slate-900">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="relative min-h-[520px] bg-slate-950 p-6 text-white md:p-10 lg:p-12">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,118,110,0.72),rgba(37,99,235,0.58)),url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center"></div>
+          <div className="relative z-10 flex h-full flex-col justify-between">
+            <div className="ml-auto rounded-3xl bg-white/15 px-5 py-4 backdrop-blur">
+              <p className="text-sm font-semibold text-white/80">System status</p>
+              <p className="mt-1 text-2xl font-black">Ready</p>
+            </div>
+
+            <div className="rounded-[28px] bg-white/95 p-5 text-slate-900 shadow-2xl backdrop-blur">
+              <h2 className="text-2xl font-black">Continue as passenger or driver</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Choose your role on the next screen and enter the redesigned GoNexi workspace.</p>
+              <Link
+                to="/login"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gonexi-gradient px-5 py-4 font-bold text-white shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg"
+              >
+                Choose Your Role
+                <i className="ri-arrow-right-line"></i>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  )
 }
 
 export default Start

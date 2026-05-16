@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from "react"
-import { useGSAP } from "@gsap/react"
-import gsap from "gsap"
+import { useContext, useEffect, useState } from "react"
 import axios from "axios"
 import "remixicon/fonts/remixicon.css"
 import LocationSearchPanel from "../components/LocationSearchPanel"
@@ -9,10 +7,8 @@ import ConfirmRide from "../components/ConfirmRide"
 import LookingForDriver from "../components/LookingForDriver"
 import WaitingForDriver from "../components/WaitingForDriver"
 import { SocketContext } from "../context/SocketContext"
-import { useContext } from "react"
 import { UserDataContext } from "../context/UserContext"
 import { useNavigate } from "react-router-dom"
-import { Link } from "react-router-dom"
 import LiveTracking from "../components/LiveTracking"
 import { useLocationPermission } from "../hooks/useLocationPermission"
 
@@ -20,12 +16,6 @@ const Home = () => {
   const [pickup, setPickup] = useState(localStorage.getItem("pickup") || "")
   const [destination, setDestination] = useState(localStorage.getItem("destination") || "")
   const [panelOpen, setPanelOpen] = useState(false)
-  const vehiclePanelRef = useRef(null)
-  const confirmRidePanelRef = useRef(null)
-  const vehicleFoundRef = useRef(null)
-  const waitingForDriverRef = useRef(null)
-  const panelRef = useRef(null)
-  const panelCloseRef = useRef(null)
   const [vehiclePanel, setVehiclePanel] = useState(false)
   const [confirmRidePanel, setConfirmRidePanel] = useState(false)
   const [vehicleFound, setVehicleFound] = useState(false)
@@ -37,6 +27,8 @@ const Home = () => {
   const [vehicleType, setVehicleType] = useState(localStorage.getItem("vehicleType") || null)
   const [ride, setRide] = useState(null)
   const [isPickupFromCurrentLocation, setIsPickupFromCurrentLocation] = useState(false)
+  const [isApplyingMapLocation, setIsApplyingMapLocation] = useState(false)
+  const [mapFocusLocation, setMapFocusLocation] = useState(null)
   const [pendingPaymentRide, setPendingPaymentRide] = useState(() => {
     const storedRide = localStorage.getItem("pendingPaymentRide")
     return storedRide ? JSON.parse(storedRide) : null
@@ -48,19 +40,12 @@ const Home = () => {
   const { permissionStatus, requestLocationPermission, currentLocation, currentAddress, updateLocation } =
     useLocationPermission()
 
-  const [liveTrackingZIndex, setLiveTrackingZIndex] = useState("z-1000")
-  const [panelZIndex, setPanelZIndex] = useState("z-[-10]")
-
-  // Auto-request location permission and set pickup on component mount
   useEffect(() => {
     const initializeLocation = async () => {
       try {
-        // console.log("🎯 Initializing location for user...")
         const result = await requestLocationPermission()
 
-        // Auto-fill pickup if not already set or if it was previously set from current location
         if (result.address && (!pickup || isPickupFromCurrentLocation)) {
-          // console.log("📍 Auto-filling pickup with current location:", result.address)
           setPickup(result.address)
           setIsPickupFromCurrentLocation(true)
           localStorage.setItem("pickup", result.address)
@@ -68,14 +53,12 @@ const Home = () => {
         }
       } catch (error) {
         console.error("Failed to get initial location:", error)
-        // Just continue without showing popup
       }
     }
 
     initializeLocation()
   }, [requestLocationPermission])
 
-  // Load saved data from localStorage and check if pickup was from current location
   useEffect(() => {
     const storedPickup = localStorage.getItem("pickup")
     const storedDestination = localStorage.getItem("destination")
@@ -86,22 +69,16 @@ const Home = () => {
     setIsPickupFromCurrentLocation(storedIsPickupFromCurrentLocation)
   }, [])
 
-  // Handle location updates from LiveTracking component
   const handleLocationUpdate = async (location) => {
-    // console.log("📍 Location updated in Home:", location)
-
-    // Send location to server via socket
     socket.emit("update-location-user", {
       userId: user._id,
-      location: location,
+      location,
     })
 
-    // Update pickup if it's currently set to current location
     if (isPickupFromCurrentLocation) {
       try {
         const result = await updateLocation(location.lat, location.lng)
         if (result.address) {
-          // console.log("🔄 Updating pickup with new current location:", result.address)
           setPickup(result.address)
           localStorage.setItem("pickup", result.address)
         }
@@ -111,54 +88,46 @@ const Home = () => {
     }
   }
 
-  // Socket setup and location tracking
   useEffect(() => {
     socket.emit("join", {
       userId: user._id,
       userType: "user",
     })
 
-    // Set up periodic location updates if we have permission
     let locationInterval
     if (permissionStatus === "granted" && currentLocation) {
       locationInterval = setInterval(() => {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              const locationData = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              }
-
               socket.emit("update-location-user", {
                 userId: user._id,
-                location: locationData,
+                location: {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                },
               })
             },
             (error) => {
               console.error("Error in periodic location update:", error)
             },
             {
-              enableHighAccuracy: false, // Use less battery for periodic updates
+              enableHighAccuracy: false,
               timeout: 5000,
               maximumAge: 60000,
             },
           )
         }
-      }, 30000) // Update every 30 seconds
+      }, 30000)
     }
 
     return () => {
-      if (locationInterval) {
-        clearInterval(locationInterval)
-      }
+      if (locationInterval) clearInterval(locationInterval)
     }
   }, [user, socket, permissionStatus, currentLocation])
 
-  // Socket event listeners
   useEffect(() => {
     socket.on("ride-confirmed", (ride) => {
-      // console.log("🚗 Ride confirmed:", ride)
       setVehicleFound(false)
       setWaitingForDriver(true)
       setRide(ride)
@@ -166,7 +135,6 @@ const Home = () => {
     })
 
     socket.on("ride-started", (ride) => {
-      // console.log("🚀 Ride started:", ride)
       setWaitingForDriver(false)
       localStorage.setItem("activeRide", JSON.stringify(ride))
       navigate("/riding", { state: { ride } })
@@ -208,7 +176,6 @@ const Home = () => {
     setPickup(value)
     localStorage.setItem("pickup", value)
 
-    // Mark that pickup is no longer from current location if user manually changes it
     if (isPickupFromCurrentLocation && value !== currentAddress) {
       setIsPickupFromCurrentLocation(false)
       localStorage.setItem("isPickupFromCurrentLocation", "false")
@@ -249,78 +216,69 @@ const Home = () => {
     }
   }
 
-  const submitHandler = (e) => {
-    e.preventDefault()
+  const focusMapOnAddress = async (address, field = activeField) => {
+    if (!address) return
+
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-coordinates`, {
+        params: { address },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+
+      setMapFocusLocation({
+        lat: response.data.lat,
+        lng: response.data.lng,
+        zoom: field === "destination" ? 13 : 14,
+      })
+    } catch (error) {
+      console.error("Error focusing map on address:", error)
+    }
   }
 
-  // GSAP animations (keeping existing code)
-  useGSAP(() => {
-    if (panelOpen) {
-      gsap.to(panelRef.current, {
-        height: "70%",
-        padding: 24,
-      })
-      gsap.to(panelCloseRef.current, {
-        opacity: 1,
-      })
-    } else {
-      gsap.to(panelRef.current, {
-        height: "0%",
-        padding: 0,
-      })
-      gsap.to(panelCloseRef.current, {
-        opacity: 0,
-      })
-    }
-  }, [panelOpen])
+  const applyCurrentLocationToActiveField = async () => {
+    if (isApplyingMapLocation) return
 
-  useGSAP(() => {
-    if (vehiclePanel) {
-      gsap.to(vehiclePanelRef.current, {
-        transform: "translateY(0)",
-      })
-    } else {
-      gsap.to(vehiclePanelRef.current, {
-        transform: "translateY(100%)",
-      })
-    }
-  }, [vehiclePanel])
+    const fieldToUpdate = activeField || "pickup"
+    setIsApplyingMapLocation(true)
 
-  useGSAP(() => {
-    if (confirmRidePanel) {
-      gsap.to(confirmRidePanelRef.current, {
-        transform: "translateY(0)",
-      })
-    } else {
-      gsap.to(confirmRidePanelRef.current, {
-        transform: "translateY(100%)",
-      })
-    }
-  }, [confirmRidePanel])
+    try {
+      let location = currentLocation
+      let address = currentAddress
 
-  useGSAP(() => {
-    if (vehicleFound) {
-      gsap.to(vehicleFoundRef.current, {
-        transform: "translateY(0)",
-      })
-    } else {
-      gsap.to(vehicleFoundRef.current, {
-        transform: "translateY(100%)",
-      })
-    }
-  }, [vehicleFound])
+      if (!location || !address) {
+        const result = await requestLocationPermission()
+        location = result.location
+        address = result.address
+      }
 
-  useGSAP(() => {
-    if (waitingForDriver) {
-      gsap.to(waitingForDriverRef.current, {
-        transform: "translateY(0)",
-      })
-    } else {
-      gsap.to(waitingForDriverRef.current, {
-        transform: "translateY(100%)",
-      })
+      if (location && !address) {
+        const result = await updateLocation(location.lat, location.lng)
+        address = result.address
+      }
+
+      const locationText = address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
+      setMapFocusLocation({ lat: location.lat, lng: location.lng, zoom: 15 })
+
+      if (fieldToUpdate === "destination") {
+        setDestination(locationText)
+        localStorage.setItem("destination", locationText)
+      } else {
+        setPickup(locationText)
+        setIsPickupFromCurrentLocation(true)
+        localStorage.setItem("pickup", locationText)
+        localStorage.setItem("isPickupFromCurrentLocation", "true")
+      }
+
+      setPanelOpen(false)
+    } catch (error) {
+      console.error("Error applying current location:", error)
+      alert("Unable to use current location. Please allow location access and try again.")
+    } finally {
+      setIsApplyingMapLocation(false)
     }
-  }, [waitingForDriver])
+  }
 
   const findTrip = async () => {
     if (pendingPaymentRide?._id) {
@@ -332,6 +290,7 @@ const Home = () => {
       alert("Please enter both pickup and destination locations.")
       return
     }
+
     setVehiclePanel(true)
     setPanelOpen(false)
 
@@ -371,14 +330,41 @@ const Home = () => {
       )
 
       if (response.status === 201) {
-        // console.log("✅ Ride created successfully:", response.data)
         setRide(response.data)
         setVehicleFound(true)
         setConfirmRidePanel(false)
       }
     } catch (error) {
-      console.error("❌ Error creating ride:", error)
+      console.error("Error creating ride:", error)
       alert("Error creating ride. Please try again.")
+    }
+  }
+
+  const cancelRideRequest = async () => {
+    if (!ride?._id) {
+      setVehicleFound(false)
+      return
+    }
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/rides/cancel`,
+        {
+          rideId: ride._id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      )
+
+      setVehicleFound(false)
+      setRide(null)
+      localStorage.removeItem("activeRide")
+    } catch (error) {
+      console.error("Error cancelling ride request:", error)
+      alert(error.response?.data?.message || "Unable to cancel this ride request.")
     }
   }
 
@@ -402,170 +388,220 @@ const Home = () => {
     }
   }
 
-  useEffect(() => {
-    if (panelOpen) {
-      setLiveTrackingZIndex("z-10")
-      setPanelZIndex("z-1000")
-    } else {
-      setLiveTrackingZIndex("z-1000")
-      setPanelZIndex("z-[-10]")
-    }
-  }, [panelOpen])
+  const suggestions = activeField === "pickup" ? pickupSuggestions : destinationSuggestions
+  const userName = user?.fullname?.firstname || "Rider"
 
   return (
-    <div className="h-screen relative overflow-hidden z-0 w-full bg-gray-50">
-      <div className="absolute p-6 top-0 flex items-center justify-between w-full">
-        <div className="flex items-center space-x-3 z-20">
-          <div className="w-12 h-12 bg-gonexi-gradient rounded-xl flex items-center justify-center shadow-gonexi">
-            <span className="text-white font-bold text-xl">G</span>
+    <div className="min-h-screen bg-[#eef2f6] p-4 text-gonexi-dark md:p-6 lg:p-8">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1500px] flex-col gap-5 lg:min-h-[calc(100vh-4rem)]">
+        <header className="flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/85 p-4 shadow-gonexi-lg backdrop-blur md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gonexi-gradient shadow-gonexi">
+              <span className="text-2xl font-black text-white">G</span>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Passenger Console</p>
+              <h1 className="text-2xl font-bold text-gonexi-dark">Good to see you, {userName}</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-white text-lg font-bold">GoNexi</h1>
-            <p className="text-white/80 text-xs">Fast & Reliable</p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+              <i className="ri-map-pin-time-line mr-2 text-gonexi-primary"></i>
+              Live dispatch enabled
+            </div>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-gonexi-primary hover:text-gonexi-primary"
+            >
+              <i className="ri-logout-box-r-line"></i>
+              Logout
+            </button>
           </div>
-        </div>
-        <Link onClick={handleLogout} className="h-10 w-10 z-20 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-full shadow-gonexi hover:shadow-gonexi-lg transition-all duration-200">
-          <i className="text-lg font-medium ri-logout-box-r-line text-gray-700"></i>
-        </Link>
-      </div>
+        </header>
 
-      <div className={`h-[55vh] ${liveTrackingZIndex}`}>
-        <LiveTracking onLocationUpdate={handleLocationUpdate} />
-      </div>
+        <main className="grid flex-1 items-start gap-5 lg:grid-cols-[430px_minmax(0,1fr)] xl:grid-cols-[470px_minmax(0,1fr)]">
+          <aside className="flex flex-col gap-5">
+            <section className="rounded-[28px] border border-white/70 bg-white p-5 shadow-gonexi-lg md:p-6">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Book a trip</p>
+                  <h2 className="mt-1 text-3xl font-bold text-gonexi-dark">Plan your ride</h2>
+                </div>
+                <div className="rounded-2xl bg-orange-50 px-3 py-2 text-sm font-semibold text-gonexi-accent">
+                  <i className="ri-flashlight-line mr-1"></i>
+                  Fast match
+                </div>
+              </div>
 
-      <div className={`flex flex-col justify-end absolute top-0 h-full w-full ${panelZIndex}`}>
-        <div className="h-[45vh] min-h-0 rounded-t-[32px] p-6 bg-white relative overflow-hidden shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.35)]">
-          <h5
-            ref={panelCloseRef}
-            onClick={() => {
-              setPanelOpen(false)
-            }}
-            className="absolute opacity-0 right-6 top-6 text-2xl cursor-pointer"
-          >
-            <i className="ri-arrow-down-wide-line"></i>
-          </h5>
-          <h4 className="text-2xl font-semibold">Find a trip</h4>
-          {pendingPaymentRide?._id && (
+              {pendingPaymentRide?._id && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/riding?ride_id=${pendingPaymentRide._id}`)}
+                  className="mb-5 w-full rounded-2xl border border-orange-200 bg-orange-50 px-4 py-4 text-left text-orange-800 transition hover:bg-orange-100"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-semibold">Pending payment required</p>
+                      <p className="mt-1 text-sm leading-6">Complete your previous ride payment before booking again.</p>
+                      <p className="mt-1 text-xs text-orange-700">
+                        Driver: {pendingPaymentRide?.captain?.fullname?.firstname} | Fare: Rs. {pendingPaymentRide?.fare}
+                      </p>
+                    </div>
+                    <i className="ri-arrow-right-line text-xl"></i>
+                  </div>
+                </button>
+              )}
+
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Pickup</span>
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-gonexi-primary focus-within:bg-white">
+                    <i className="ri-map-pin-user-fill text-xl text-gonexi-primary"></i>
+                    <input
+                      onFocus={() => {
+                        setPanelOpen(true)
+                        setActiveField("pickup")
+                      }}
+                      value={pickup}
+                      onChange={handlePickupChange}
+                      className="w-full bg-transparent text-base font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                      type="text"
+                      placeholder="Add a pick-up location"
+                    />
+                  </div>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Destination</span>
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-gonexi-secondary focus-within:bg-white">
+                    <i className="ri-map-pin-2-fill text-xl text-gonexi-secondary"></i>
+                    <input
+                      onFocus={() => {
+                        setPanelOpen(true)
+                        setActiveField("destination")
+                      }}
+                      value={destination}
+                      onChange={handleDestinationChange}
+                      className="w-full bg-transparent text-base font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                      type="text"
+                      placeholder="Enter your destination"
+                    />
+                  </div>
+                </label>
+              </form>
+
+              {panelOpen && suggestions.length > 0 && (
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                  <LocationSearchPanel
+                    suggestions={suggestions}
+                    setPanelOpen={setPanelOpen}
+                    setVehiclePanel={setVehiclePanel}
+                    setPickup={setPickup}
+                    setDestination={setDestination}
+                    activeField={activeField}
+                    onSuggestionSelect={focusMapOnAddress}
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={findTrip}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gonexi-gradient px-5 py-4 text-base font-bold text-white shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg"
+              >
+                <i className={pendingPaymentRide?._id ? "ri-secure-payment-line" : "ri-route-line"}></i>
+                {pendingPaymentRide?._id ? "Complete Pending Payment" : "Find Your Ride"}
+              </button>
+            </section>
+
+            {vehiclePanel && (
+              <section className="rounded-[28px] border border-white/70 bg-white p-4 shadow-gonexi-lg md:p-5">
+                <VehiclePanel
+                  selectVehicle={setVehicleType}
+                  fare={fare}
+                  setConfirmRidePanel={setConfirmRidePanel}
+                  setVehiclePanel={setVehiclePanel}
+                />
+              </section>
+            )}
+
+            <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {[
+                ["ri-time-line", "Avg 2 min", "Nearby pickup"],
+                ["ri-shield-check-line", "Verified", "Captain network"],
+                ["ri-bank-card-line", "Stripe", "Secure payments"],
+              ].map(([icon, title, label]) => (
+                <div key={title} className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm backdrop-blur">
+                  <i className={`${icon} text-2xl text-gonexi-primary`}></i>
+                  <p className="mt-2 font-bold text-slate-900">{title}</p>
+                  <p className="text-sm text-slate-500">{label}</p>
+                </div>
+              ))}
+            </section>
+          </aside>
+
+          <section className="relative h-[560px] overflow-hidden rounded-[32px] border border-white/70 bg-slate-900 shadow-gonexi-lg lg:sticky lg:top-8 lg:h-[calc(100vh-11rem)] lg:min-h-[520px]">
+            <LiveTracking onLocationUpdate={handleLocationUpdate} focusLocation={mapFocusLocation} />
+            <div className="pointer-events-none absolute left-5 top-5 rounded-2xl bg-white/75 px-4 py-3 text-sm font-semibold text-slate-700 shadow-gonexi backdrop-blur">
+              <i className="ri-radar-line mr-2 text-gonexi-success"></i>
+              Tracking active
+            </div>
             <button
               type="button"
-              onClick={() => navigate(`/riding?ride_id=${pendingPaymentRide._id}`)}
-              className="mt-4 w-full rounded-2xl border border-orange-200 bg-orange-50 px-4 py-4 text-left text-orange-800 shadow-sm transition-colors hover:bg-orange-100"
+              onClick={applyCurrentLocationToActiveField}
+              disabled={isApplyingMapLocation}
+              className="absolute right-5 top-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-white/90 px-4 py-3 text-sm font-bold text-slate-700 shadow-gonexi backdrop-blur transition hover:-translate-y-0.5 hover:text-gonexi-primary disabled:cursor-not-allowed disabled:opacity-70"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Pending payment required</p>
-                  <p className="mt-1 text-sm leading-6">
-                    You still have an unpaid ride. Complete that payment before booking another ride.
-                  </p>
-                  <p className="mt-1 text-xs text-orange-700">
-                    Driver: {pendingPaymentRide?.captain?.fullname?.firstname} | Fare: Rs. {pendingPaymentRide?.fare}
-                  </p>
-                </div>
-                <i className="ri-arrow-right-line text-lg"></i>
-              </div>
+              <i className="ri-crosshair-2-line text-gonexi-primary"></i>
+              {isApplyingMapLocation ? "Using location..." : `Use for ${activeField === "destination" ? "Destination" : "Pickup"}`}
             </button>
-          )}
-          <form
-            className="relative py-3"
-            onSubmit={(e) => {
-              submitHandler(e)
-            }}
-          >
-            {/* Fixed line positioning - moved to proper z-index */}
-            <div className="line absolute h-16 w-1 top-[50%] -translate-y-1/2 left-5 bg-gray-700 rounded-full z-30"></div>
-
-            {/* Pickup input - clean without extra indicators */}
-            <input
-              onClick={() => {
-                setPanelOpen(true)
-                setActiveField("pickup")
-              }}
-              value={pickup}
-              onChange={handlePickupChange}
-              className="bg-[#eee] px-12 py-2 text-lg rounded-lg w-full relative z-10"
-              type="text"
-              placeholder="Add a pick-up location"
-            />
-
-            <input
-              onClick={() => {
-                setPanelOpen(true)
-                setActiveField("destination")
-              }}
-              value={destination}
-              onChange={handleDestinationChange}
-              className="bg-[#eee] px-12 py-2 text-lg rounded-lg w-full mt-3 relative z-10"
-              type="text"
-              placeholder="Enter your destination"
-            />
-          </form>
-
-          <button onClick={findTrip} className="bg-gonexi-gradient text-white px-4 py-3 rounded-xl mt-4 w-full font-semibold shadow-gonexi hover:shadow-gonexi-lg transform hover:scale-105 transition-all duration-200">
-            {pendingPaymentRide?._id ? 'Complete Pending Payment' : 'Find Your Ride'}
-          </button>
-        </div>
-        <div ref={panelRef} className="bg-white z-10 overflow-y-auto overscroll-contain">
-          <LocationSearchPanel
-            suggestions={activeField === "pickup" ? pickupSuggestions : destinationSuggestions}
-            setPanelOpen={setPanelOpen}
-            setVehiclePanel={setVehiclePanel}
-            setPickup={setPickup}
-            setDestination={setDestination}
-            activeField={activeField}
-          />
-        </div>
+          </section>
+        </main>
       </div>
 
-      {vehiclePanel && (
-        <div ref={vehiclePanelRef} className="w-full absolute z-10 bottom-0 max-h-[88vh] translate-y-full overflow-y-auto rounded-t-[32px] bg-white px-3 py-6 pt-12 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)]">
-          <VehiclePanel
-            selectVehicle={setVehicleType}
-            fare={fare}
-            setConfirmRidePanel={setConfirmRidePanel}
-            setVehiclePanel={setVehiclePanel}
-          />
-        </div>
-      )}
-
       {confirmRidePanel && (
-        <div
-          ref={confirmRidePanelRef}
-          className="w-full absolute z-10 bottom-0 max-h-[88vh] translate-y-full overflow-y-auto rounded-t-[32px] bg-white px-3 py-6 pt-12 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)]"
-        >
-          <ConfirmRide
-            createRide={createRide}
-            pickup={pickup}
-            destination={destination}
-            fare={fare}
-            vehicleType={vehicleType}
-            setConfirmRidePanel={setConfirmRidePanel}
-            setVehicleFound={setVehicleFound}
-          />
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-3 shadow-2xl">
+            <ConfirmRide
+              createRide={createRide}
+              pickup={pickup}
+              destination={destination}
+              fare={fare}
+              vehicleType={vehicleType}
+              setConfirmRidePanel={setConfirmRidePanel}
+              setVehicleFound={setVehicleFound}
+            />
+          </div>
         </div>
       )}
 
       {vehicleFound && (
-        <div ref={vehicleFoundRef} className="w-full absolute z-10 bottom-0 max-h-[88vh] translate-y-full overflow-y-auto rounded-t-[32px] bg-white px-3 py-6 pt-12 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)]">
-          <LookingForDriver
-            createRide={createRide}
-            pickup={pickup}
-            destination={destination}
-            fare={fare}
-            vehicleType={vehicleType}
-            setVehicleFound={setVehicleFound}
-          />
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
+            <LookingForDriver
+              createRide={createRide}
+              cancelRideRequest={cancelRideRequest}
+              pickup={pickup}
+              destination={destination}
+              fare={fare}
+              vehicleType={vehicleType}
+              setVehicleFound={setVehicleFound}
+            />
+          </div>
         </div>
       )}
 
       {waitingForDriver && (
-        <div ref={waitingForDriverRef} className="w-full absolute z-10 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-[32px] bg-white px-3 py-6 pt-12 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)]">
-          <WaitingForDriver
-            ride={ride}
-            setVehicleFound={setVehicleFound}
-            setWaitingForDriver={setWaitingForDriver}
-            waitingForDriver={waitingForDriver}
-            vehicleType={vehicleType}
-          />
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
+            <WaitingForDriver
+              ride={ride}
+              setVehicleFound={setVehicleFound}
+              setWaitingForDriver={setWaitingForDriver}
+              waitingForDriver={waitingForDriver}
+              vehicleType={vehicleType}
+            />
+          </div>
         </div>
       )}
     </div>

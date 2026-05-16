@@ -1,55 +1,73 @@
-import React from 'react'
+const vehicleIcon = {
+  car: ["ri-car-line", "bg-gonexi-gradient"],
+  moto: ["ri-motorbike-line", "bg-gonexi-secondary"],
+  auto: ["ri-truck-line", "bg-gonexi-accent"],
+}
 
 const LookingForDriver = (props) => {
-    return (
-        <div>
-            <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-                props.setVehicleFound(false)
-            }}><i className="text-3xl text-gray-400 ri-arrow-down-wide-line"></i></h5>
-            <h3 className='text-2xl font-semibold mb-5'>Looking for a Driver</h3>
+  const [icon, tone] = vehicleIcon[props.vehicleType] || vehicleIcon.car
 
-            <div className='flex gap-2 justify-between flex-col items-center'>
-                    {
-                        props.vehicleType === 'car' ? (
-                            <div className="w-20 h-20 bg-gonexi-gradient rounded-2xl flex items-center justify-center">
-                                <i className="ri-car-line text-white text-3xl"></i>
-                            </div>
-                        ) : props.vehicleType === 'moto' ? (
-                            <div className="w-20 h-20 bg-gonexi-secondary rounded-2xl flex items-center justify-center">
-                                <i className="ri-motorbike-line text-white text-3xl"></i>
-                            </div>
-                        ) : (
-                            <div className="w-20 h-20 bg-gonexi-accent rounded-2xl flex items-center justify-center">
-                                <i className="ri-truck-line text-white text-3xl"></i>
-                            </div>
-                        )
-                    }
-                <div className='w-full mt-5'>
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
-                        <i className="ri-map-pin-user-fill text-gonexi-primary"></i>
-                        <div>
-                            <h3 className='text-lg font-medium'>Pickup</h3>
-                            <p className='text-sm -mt-1 text-gray-600'>{props.pickup}</p>
-                        </div>
-                    </div>
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
-                        <i className="text-lg ri-map-pin-2-fill text-gonexi-secondary"></i>
-                        <div>
-                            <h3 className='text-lg font-medium'>Destination</h3>
-                            <p className='text-sm -mt-1 text-gray-600'>{props.destination}</p>
-                        </div>
-                    </div>
-                    <div className='flex items-center gap-5 p-3'>
-                        <i className="ri-currency-line text-gonexi-accent"></i>
-                        <div>
-                            <h3 className='text-lg font-medium'>₹{props.fare[ props.vehicleType ]} </h3>
-                            <p className='text-sm -mt-1 text-gray-600'>Cash</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Dispatching</p>
+          <h3 className="mt-1 text-3xl font-bold text-slate-900">Looking for a driver</h3>
+          <p className="mt-2 text-sm text-slate-500">We are matching your request with nearby captains.</p>
         </div>
-    )
+        <button
+          type="button"
+          onClick={() => props.cancelRideRequest ? props.cancelRideRequest() : props.setVehicleFound(false)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+          aria-label="Cancel ride request"
+        >
+          <i className="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div className="rounded-3xl bg-slate-50 p-6 text-center">
+        <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-3xl ${tone} shadow-gonexi`}>
+          <i className={`${icon} text-3xl text-white`}></i>
+        </div>
+        <div className="mx-auto mt-5 h-2 max-w-xs overflow-hidden rounded-full bg-slate-200">
+          <div className="h-full w-2/3 animate-pulse rounded-full bg-gonexi-gradient"></div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3">
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-map-pin-user-fill mt-1 text-gonexi-primary"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Pickup</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{props.pickup}</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-map-pin-2-fill mt-1 text-gonexi-secondary"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Destination</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{props.destination}</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4">
+          <i className="ri-currency-line mt-1 text-gonexi-accent"></i>
+          <div>
+            <h3 className="font-bold text-slate-900">Rs. {props.fare?.[props.vehicleType]}</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">Trip fare</p>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => props.cancelRideRequest ? props.cancelRideRequest() : props.setVehicleFound(false)}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100"
+      >
+        <i className="ri-close-circle-line"></i>
+        Cancel Ride Request
+      </button>
+    </div>
+  )
 }
 
 export default LookingForDriver

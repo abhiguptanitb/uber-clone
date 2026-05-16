@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -9,7 +9,7 @@ const Captainlogin = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState(''); 
 
-    const { setCaptain } = React.useContext(CaptainDataContext);
+    const { setCaptain } = useContext(CaptainDataContext);
     const navigate = useNavigate();
 
     const submitHandler = async (e) => {
@@ -45,6 +45,16 @@ const Captainlogin = () => {
     return (
         <div className="min-h-screen bg-gonexi-gradient-light flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-gonexi-lg p-8 w-full max-w-md">
+                <div className="mb-6 flex justify-end">
+                    <Link
+                        to="/"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+                    >
+                        <i className="ri-home-5-line"></i>
+                        Home
+                    </Link>
+                </div>
+
                 {/* Logo and branding */}
                 <div className="text-center mb-8">
                     <div className="w-20 h-20 bg-gonexi-gradient rounded-2xl flex items-center justify-center shadow-gonexi-lg mx-auto mb-4">

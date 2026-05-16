@@ -1,81 +1,85 @@
-import React from 'react'
+const vehicleMeta = {
+  car: { icon: "ri-car-line", label: "GoNexiCar", tone: "bg-gonexi-gradient" },
+  moto: { icon: "ri-motorbike-line", label: "GoNexiMoto", tone: "bg-gonexi-secondary" },
+  auto: { icon: "ri-truck-line", label: "GoNexiAuto", tone: "bg-gonexi-accent" },
+}
 
 const ConfirmRide = (props) => {
-    return (
-        <div className="bg-white rounded-t-3xl shadow-gonexi-lg">
-            <div className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-                props.setConfirmRidePanel(false)
-            }}>
-                <i className="text-3xl text-gray-400 ri-arrow-down-wide-line"></i>
-            </div>
-            
-            <div className="pt-8 pb-6 px-6">
-                <h3 className='text-2xl font-bold mb-6 text-gray-800'>Confirm Your Ride</h3>
+  const meta = vehicleMeta[props.vehicleType] || vehicleMeta.car
 
-                <div className='flex gap-4 justify-between flex-col items-center'>
-                    {/* Vehicle Icon */}
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-gonexi-lg mb-4">
-                        {props.vehicleType === 'car' ? (
-                            <div className="w-20 h-20 bg-gonexi-gradient rounded-2xl flex items-center justify-center">
-                                <i className="ri-car-line text-white text-3xl"></i>
-                            </div>
-                        ) : props.vehicleType === 'moto' ? (
-                            <div className="w-20 h-20 bg-gonexi-secondary rounded-2xl flex items-center justify-center">
-                                <i className="ri-motorbike-line text-white text-3xl"></i>
-                            </div>
-                        ) : (
-                            <div className="w-20 h-20 bg-gonexi-accent rounded-2xl flex items-center justify-center">
-                                <i className="ri-truck-line text-white text-3xl"></i>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className='w-full space-y-4'>
-                        <div className='flex items-center gap-4 p-4 bg-gray-50 rounded-xl'>
-                            <div className="w-10 h-10 bg-gonexi-primary rounded-lg flex items-center justify-center">
-                                <i className="ri-map-pin-user-fill text-white"></i>
-                            </div>
-                            <div>
-                                <h3 className='text-lg font-semibold text-gray-800'>Pickup Location</h3>
-                                <p className='text-sm text-gray-600'>{props.pickup}</p>
-                            </div>
-                        </div>
-                        
-                        <div className='flex items-center gap-4 p-4 bg-gray-50 rounded-xl'>
-                            <div className="w-10 h-10 bg-gonexi-secondary rounded-lg flex items-center justify-center">
-                                <i className="ri-map-pin-2-fill text-white"></i>
-                            </div>
-                            <div>
-                                <h3 className='text-lg font-semibold text-gray-800'>Destination</h3>
-                                <p className='text-sm text-gray-600'>{props.destination}</p>
-                            </div>
-                        </div>
-                        
-                        <div className='flex items-center gap-4 p-4 bg-gray-50 rounded-xl'>
-                            <div className="w-10 h-10 bg-gonexi-accent rounded-lg flex items-center justify-center">
-                                <i className="ri-currency-line text-white"></i>
-                            </div>
-                            <div>
-                                <h3 className='text-lg font-semibold text-gray-800'>₹{props.fare[props.vehicleType]}</h3>
-                                <p className='text-sm text-gray-600'>Cash Payment</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button 
-                        onClick={() => {
-                            props.setVehicleFound(true)
-                            props.setConfirmRidePanel(false)
-                            props.createRide()
-                        }} 
-                        className='w-full mt-6 mb-4 bg-gonexi-gradient text-white font-semibold py-4 rounded-2xl shadow-gonexi hover:shadow-gonexi-lg transform hover:scale-105 transition-all duration-200'
-                    >
-                        Confirm Ride
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="p-3 md:p-5">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gonexi-primary">Final check</p>
+          <h3 className="mt-1 text-3xl font-bold text-slate-900">Confirm your ride</h3>
         </div>
-    )
+        <button
+          type="button"
+          onClick={() => props.setConfirmRidePanel(false)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+          aria-label="Close confirmation"
+        >
+          <i className="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-[180px_minmax(0,1fr)]">
+        <div className="rounded-3xl bg-slate-50 p-5 text-center">
+          <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-3xl ${meta.tone} shadow-gonexi`}>
+            <i className={`${meta.icon} text-3xl text-white`}></i>
+          </div>
+          <h4 className="mt-4 text-xl font-bold text-slate-900">{meta.label}</h4>
+          <p className="mt-1 text-sm text-slate-500">Estimated fare</p>
+          <p className="mt-2 text-3xl font-black text-gonexi-primary">Rs. {props.fare?.[props.vehicleType]}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-gonexi-primary">
+              <i className="ri-map-pin-user-fill"></i>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">Pickup Location</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{props.pickup}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-gonexi-secondary">
+              <i className="ri-map-pin-2-fill"></i>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">Destination</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{props.destination}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-gonexi-accent">
+              <i className="ri-wallet-3-line"></i>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">Payment</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-600">Pay securely after the trip is completed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => {
+          props.setVehicleFound(true)
+          props.setConfirmRidePanel(false)
+          props.createRide()
+        }}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gonexi-gradient px-5 py-4 text-base font-bold text-white shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg"
+      >
+        <i className="ri-checkbox-circle-line"></i>
+        Confirm Ride
+      </button>
+    </div>
+  )
 }
 
 export default ConfirmRide

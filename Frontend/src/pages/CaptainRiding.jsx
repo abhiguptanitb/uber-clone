@@ -1,91 +1,82 @@
-import { useContext, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import FinishRide from '../components/FinishRide'
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
-import LiveTracking from '../components/LiveTracking'
-import { SocketContext } from '../context/SocketContext'
+import { useContext, useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
+import FinishRide from "../components/FinishRide"
+import LiveTracking from "../components/LiveTracking"
+import { SocketContext } from "../context/SocketContext"
 
 const CaptainRiding = () => {
-    const [finishRidePanel, setFinishRidePanel] = useState(false)
-    const finishRidePanelRef = useRef(null)
-    const location = useLocation()
-    const [rideData, setRideData] = useState(location.state?.ride)
-    const { socket } = useContext(SocketContext)
+  const [finishRidePanel, setFinishRidePanel] = useState(false)
+  const location = useLocation()
+  const [rideData, setRideData] = useState(location.state?.ride)
+  const { socket } = useContext(SocketContext)
 
-    useEffect(() => {
-        const handleRidePaymentCompleted = (updatedRide) => {
-            if (updatedRide?._id === rideData?._id) {
-                setRideData(updatedRide)
-            }
-        }
+  useEffect(() => {
+    const handleRidePaymentCompleted = (updatedRide) => {
+      if (updatedRide?._id === rideData?._id) {
+        setRideData(updatedRide)
+      }
+    }
 
-        socket.on('ride-payment-completed', handleRidePaymentCompleted)
+    socket.on("ride-payment-completed", handleRidePaymentCompleted)
 
-        return () => {
-            socket.off('ride-payment-completed', handleRidePaymentCompleted)
-        }
-    }, [rideData?._id, socket])
+    return () => {
+      socket.off("ride-payment-completed", handleRidePaymentCompleted)
+    }
+  }, [rideData?._id, socket])
 
-    useGSAP(function () {
-        if (finishRidePanel) {
-            gsap.to(finishRidePanelRef.current, {
-                transform: 'translateY(0)',
-            })
-        } else {
-            gsap.to(finishRidePanelRef.current, {
-                transform: 'translateY(100%)',
-            })
-        }
-    }, [finishRidePanel])
-
-
-    return (
-        <div className='relative h-screen flex flex-col w-full'>
-            <div className='fixed top-0 p-6 flex items-center justify-between z-20'>
-                <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gonexi-gradient rounded-xl flex items-center justify-center shadow-gonexi">
-                        <i className="ri-steering-2-line text-white text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 className="text-white text-lg font-bold">GoNexi Driver</h1>
-                        <p className="text-white/80 text-xs">Ride in Progress</p>
-                    </div>
-                </div>
-            </div>
-            
-
-            <div className='flex-grow'>
-                <LiveTracking />
+  return (
+    <div className="min-h-screen bg-[#eef2f6] p-4 text-gonexi-dark md:p-6 lg:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1500px] items-start gap-5 lg:min-h-[calc(100vh-4rem)] xl:grid-cols-[420px_minmax(0,1fr)]">
+        <aside className="flex flex-col gap-5">
+          <section className="rounded-[28px] border border-white/70 bg-white p-6 shadow-gonexi-lg">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gonexi-gradient shadow-gonexi">
+                <i className="ri-steering-2-line text-2xl text-white"></i>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Active trip</p>
+                <h1 className="text-2xl font-bold text-gonexi-dark">Ride in progress</h1>
+              </div>
             </div>
 
-            <div className='h-[20%] p-4 flex items-center justify-between relative bg-gonexi-gradient shadow-gonexi-lg rounded-t-lg'>
-                <div className='flex items-center gap-2'>
-                    <i className='text-3xl text-white ri-map-pin-line'></i>
-                    <div>
-                        <h4 className='text-lg font-bold text-white'>Ride in Progress</h4>
-                        <p className='text-sm text-white/80'>
-                            {rideData?.paymentStatus === 'paid' ? 'Payment received' : 'Payment pending'}
-                        </p>
-                    </div>
-                </div>
-                <button
-                    className='bg-white hover:bg-gray-100 transition-all duration-300 text-gonexi-primary font-semibold py-2 px-6 rounded-lg shadow-gonexi'
-                    onClick={() => setFinishRidePanel(true)}
-                >
-                    Complete Ride
-                </button>
+            <div className="mt-6 rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-500">Payment status</p>
+              <h2 className="mt-1 text-2xl font-black text-slate-900">
+                {rideData?.paymentStatus === "paid" ? "Payment received" : "Payment pending"}
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Complete the ride when the passenger reaches the destination.
+              </p>
             </div>
 
-
-            <div
-                ref={finishRidePanelRef}
-                className='absolute w-full z-[500] bottom-0 translate-y-full bg-white px-3 py-10 pt-12'
+            <button
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gonexi-gradient px-5 py-4 font-bold text-white shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg"
+              onClick={() => setFinishRidePanel(true)}
             >
-                <FinishRide ride={rideData} setFinishRidePanel={setFinishRidePanel} />
-            </div>
+              <i className="ri-flag-line"></i>
+              Complete Ride
+            </button>
+          </section>
+        </aside>
+
+        <section className="relative h-[560px] overflow-hidden rounded-[32px] border border-white/70 bg-slate-900 shadow-gonexi-lg xl:sticky xl:top-8 xl:h-[calc(100vh-4rem)] xl:min-h-[560px]">
+          <LiveTracking />
+          <div className="pointer-events-none absolute left-5 top-5 rounded-2xl bg-white/90 px-4 py-3 text-sm font-semibold text-slate-700 shadow-gonexi backdrop-blur">
+            <i className="ri-route-line mr-2 text-gonexi-success"></i>
+            Navigating active ride
+          </div>
+        </section>
+      </div>
+
+      {finishRidePanel && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
+            <FinishRide ride={rideData} setFinishRidePanel={setFinishRidePanel} />
+          </div>
         </div>
-    )
+      )}
+    </div>
+  )
 }
 
 export default CaptainRiding

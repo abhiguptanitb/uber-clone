@@ -26,6 +26,17 @@ router.post('/confirm',
     rideController.confirmRide
 )
 
+router.get('/captain/available',
+    authMiddleware.authCaptain,
+    rideController.getAvailableRidesForCaptain
+)
+
+router.post('/cancel',
+    authMiddleware.authUser,
+    body('rideId').isMongoId().withMessage('Invalid ride id'),
+    rideController.cancelRide
+)
+
 router.get('/start-ride',
     authMiddleware.authCaptain,
     query('rideId').isMongoId().withMessage('Invalid ride id'),

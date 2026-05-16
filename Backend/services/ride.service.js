@@ -76,9 +76,53 @@ module.exports.createRide = async ({
         user,
         pickup,
         destination,
+        vehicleType,
         otp: getOtp(6),
         fare: fare[ vehicleType ],
     })
+
+    return ride;
+}
+
+module.exports.findAvailableRidesForCaptain = async ({ captain, limit = 10 }) => {
+    if (!captain) {
+        throw new Error('Captain is required');
+    }
+
+    const vehicleType = captain.vehicle?.vehicleType;
+
+    if (!vehicleType) {
+        throw new Error('Captain vehicle type is required');
+    }
+
+    const rides = await rideModel.find({
+        status: 'pending',
+        vehicleType,
+    })
+        .populate('user')
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(limit);
+
+    return rides;
+}
+
+module.exports.cancelPendingRideForUser = async ({ rideId, userId }) => {
+    if (!rideId || !userId) {
+        throw new Error('Ride id and user id are required');
+    }
+
+    const ride = await rideModel.findOne({
+        _id: rideId,
+        user: userId,
+        status: 'pending',
+    }).populate('user').populate('captain');
+
+    if (!ride) {
+        throw new Error('Pending ride not found');
+    }
+
+    ride.status = 'cancelled';
+    await ride.save();
 
     return ride;
 }
@@ -90,12 +134,19 @@ module.exports.confirmRide = async ({
         throw new Error('Ride id is required');
     }
 
-    await rideModel.findOneAndUpdate({
-        _id: rideId
+    const acceptedRide = await rideModel.findOneAndUpdate({
+        _id: rideId,
+        status: 'pending',
     }, {
         status: 'accepted',
         captain: captain._id
+    }, {
+        new: true,
     })
+
+    if (!acceptedRide) {
+        throw new Error('Ride is no longer available');
+    }
 
     const ride = await rideModel.findOne({
         _id: rideId

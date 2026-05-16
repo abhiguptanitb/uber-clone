@@ -11,10 +11,11 @@ const DEFAULT_LOCATION = {
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
 
 // Update the component to handle default location:
-const LiveTracking = ({ onLocationUpdate }) => {
+const LiveTracking = ({ onLocationUpdate, focusLocation, showStatusIndicator = false }) => {
   const [currentPosition, setCurrentPosition] = useState(null)
   const [viewState, setViewState] = useState(null)
   const mapRef = useRef(null)
+  const containerRef = useRef(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [permissionStatus, setPermissionStatus] = useState("prompt")
@@ -42,7 +43,7 @@ const LiveTracking = ({ onLocationUpdate }) => {
   }
 
   // Use default location when permission is denied
-  const useDefaultLocation = () => {
+  const applyDefaultLocation = () => {
     // console.log("🌍 Using default location (New Delhi)")
     const newViewState = {
       longitude: DEFAULT_LOCATION.lng,
@@ -98,7 +99,7 @@ const LiveTracking = ({ onLocationUpdate }) => {
             clearInterval(autoRetryIntervalRef.current)
             startWatchingLocation()
           },
-          (error) => {
+          () => {
             // Silently continue with default location
             // console.log("📍 Still using default location")
           },
@@ -176,25 +177,20 @@ const LiveTracking = ({ onLocationUpdate }) => {
 
   // Update the handleLocationError function
   const handleLocationError = (error) => {
-    let errorMessage = "Unable to get your location"
-
     switch (error.code) {
       case error.PERMISSION_DENIED:
         // console.log("❌ Location permission denied, using default location")
         setUsingDefaultLocation(true)
-        useDefaultLocation()
+        applyDefaultLocation()
         return
       case error.POSITION_UNAVAILABLE:
-        errorMessage = "Location information unavailable. Using default location..."
         setUsingDefaultLocation(true)
-        useDefaultLocation()
+        applyDefaultLocation()
         return
       case error.TIMEOUT:
-        errorMessage = "Location request timed out. Retrying..."
         scheduleRetry()
         return
       default:
-        errorMessage = "An unknown location error occurred. Retrying..."
         scheduleRetry()
         return
     }
@@ -280,6 +276,46 @@ const LiveTracking = ({ onLocationUpdate }) => {
     }
   }
 
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeMap = () => {
+      if (mapRef.current) {
+        mapRef.current.resize()
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(resizeMap)
+    resizeObserver.observe(containerRef.current)
+    resizeMap()
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!focusLocation?.lat || !focusLocation?.lng) return
+
+    const nextViewState = {
+      longitude: focusLocation.lng,
+      latitude: focusLocation.lat,
+      zoom: focusLocation.zoom || 13,
+    }
+
+    setViewState((prevState) => ({
+      ...(prevState || nextViewState),
+      ...nextViewState,
+    }))
+
+    const map = mapRef.current?.getMap?.()
+    map?.flyTo({
+      center: [focusLocation.lng, focusLocation.lat],
+      zoom: focusLocation.zoom || 13,
+      duration: 900,
+    })
+  }, [focusLocation])
+
   // Manual retry function
   const retryLocation = () => {
     setRetryCount(0)
@@ -287,10 +323,6 @@ const LiveTracking = ({ onLocationUpdate }) => {
   }
 
   // Request permission manually
-  const requestPermission = () => {
-    startLocationTracking()
-  }
-
   // Loading state
   if (isLoading) {
     return (
@@ -319,7 +351,7 @@ const LiveTracking = ({ onLocationUpdate }) => {
         ></div>
         <p style={{ fontSize: "16px", color: "#4b5563", marginBottom: "10px", fontWeight: "500" }}>Getting your location...</p>
         <p style={{ fontSize: "12px", color: "#9ca3af" }}>Attempt {retryCount + 1} of 5</p>
-        <style jsx>{`
+        <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -457,7 +489,7 @@ const LiveTracking = ({ onLocationUpdate }) => {
   }
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+    <div ref={containerRef} style={{ width: "100%", height: "100%", position: "relative" }}>
       <Map
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
@@ -491,7 +523,7 @@ const LiveTracking = ({ onLocationUpdate }) => {
                 animation: "innerPulse 1.5s infinite",
               }}
             ></div>
-            <style jsx>{`
+            <style>{`
               @keyframes pulse {
                 0% {
                   box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7), 0 4px 12px rgba(99, 102, 241, 0.4);
@@ -510,49 +542,53 @@ const LiveTracking = ({ onLocationUpdate }) => {
             `}</style>
           </div>
         </Marker>
+        {focusLocation?.lat && focusLocation?.lng && (
+          <Marker longitude={focusLocation.lng} latitude={focusLocation.lat}>
+            <div
+              style={{
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: "#0f766e",
+                border: "4px solid white",
+                boxShadow: "0 0 0 4px rgba(15, 118, 110, 0.22), 0 8px 18px rgba(15, 23, 42, 0.25)",
+              }}
+            ></div>
+          </Marker>
+        )}
       </Map>
 
-      {/* Location status indicator */}
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(10px)",
-          padding: "12px 16px",
-          borderRadius: "12px",
-          fontSize: "12px",
-          zIndex: 1000,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1), 0 0 0 1px rgba(99, 102, 241, 0.1)",
-          border: "1px solid rgba(99, 102, 241, 0.2)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              background: usingDefaultLocation ? "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              animation: "blink 1s infinite",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            }}
-          ></div>
-          <span style={{ fontWeight: "500", color: "#374151" }}>
-            {usingDefaultLocation ? "Default Location" : "Live Location"}
-          </span>
+      {showStatusIndicator && (
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            background: "rgba(255,255,255,0.82)",
+            backdropFilter: "blur(8px)",
+            padding: "8px 10px",
+            borderRadius: "10px",
+            fontSize: "11px",
+            zIndex: 1000,
+            boxShadow: "0 4px 14px rgba(15, 23, 42, 0.12)",
+            border: "1px solid rgba(15, 118, 110, 0.14)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: usingDefaultLocation ? "#f97316" : "#10b981",
+              }}
+            ></div>
+            <span style={{ fontWeight: "600", color: "#334155" }}>
+              {usingDefaultLocation ? "Default Location" : "Live Location"}
+            </span>
+          </div>
         </div>
-        <div style={{ fontSize: "10px", color: "#6b7280", marginTop: "4px", fontFamily: "monospace" }}>
-          {currentPosition.lat.toFixed(6)}, {currentPosition.lng.toFixed(6)}
-        </div>
-        <style jsx>{`
-          @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
-          }
-        `}</style>
-      </div>
+      )}
     </div>
   )
 }

@@ -39,7 +39,7 @@ const LocationDebug = () => {
     }
   }, [])
 
-  if (process.env.NODE_ENV === "production") {
+  if (import.meta.env.PROD) {
     return null // Don't show in production
   }
 

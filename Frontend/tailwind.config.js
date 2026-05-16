@@ -8,18 +8,18 @@ export default {
     extend: {
       colors: {
         gonexi: {
-          primary: '#6366f1',      // Indigo - modern and trustworthy
-          secondary: '#f59e0b',    // Amber - energetic and fast
-          accent: '#ec4899',       // Pink - vibrant and modern
-          light: '#f8fafc',        // Light gray
-          dark: '#1e293b',         // Dark slate
-          success: '#10b981',      // Emerald green
-          warning: '#f59e0b',      // Amber
-          error: '#ef4444',        // Red
-          neutral: '#64748b',       // Slate gray
+          primary: '#0f766e',
+          secondary: '#2563eb',
+          accent: '#f97316',
+          light: '#f8fafc',
+          dark: '#172033',
+          success: '#16a34a',
+          warning: '#f59e0b',
+          error: '#ef4444',
+          neutral: '#64748b',
           gradient: {
-            from: '#6366f1',
-            to: '#ec4899'
+            from: '#0f766e',
+            to: '#2563eb'
           }
         }
       },
@@ -27,12 +27,12 @@ export default {
         'gonexi': ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'gonexi': '0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06)',
-        'gonexi-lg': '0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05)',
+        'gonexi': '0 12px 30px -18px rgba(15, 118, 110, 0.55)',
+        'gonexi-lg': '0 24px 60px -32px rgba(23, 32, 51, 0.36)',
       },
       backgroundImage: {
-        'gonexi-gradient': 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
-        'gonexi-gradient-light': 'linear-gradient(135deg, #f0f9ff 0%, #fdf2f8 100%)',
+        'gonexi-gradient': 'linear-gradient(135deg, #0f766e 0%, #2563eb 100%)',
+        'gonexi-gradient-light': 'linear-gradient(135deg, #ecfeff 0%, #f8fafc 55%, #fff7ed 100%)',
       }
     },
   },

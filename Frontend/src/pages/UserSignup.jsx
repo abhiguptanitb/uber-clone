@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { UserDataContext } from '../context/UserContext';
@@ -71,10 +71,29 @@ const UserSignup = () => {
     };
 
     return (
-        <div className='mt-3 bg-gonexi-gradient-light'>
-            <div className='p-7 h-screen flex flex-col justify-between'>
+        <div className='min-h-screen bg-[#eef2f6] p-4 md:p-8'>
+            <div className='mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-gonexi-lg md:grid-cols-[0.9fr_1.1fr]'>
+                <div className='hidden bg-gonexi-gradient p-10 text-white md:flex md:flex-col md:justify-between'>
+                    <div>
+                        <p className='text-sm font-semibold uppercase tracking-[0.22em] text-white/75'>Passenger onboarding</p>
+                        <h1 className='mt-4 text-5xl font-black leading-tight'>Create your ride profile.</h1>
+                    </div>
+                    <div className='rounded-3xl bg-white/15 p-5 backdrop-blur'>
+                        <p className='text-sm leading-6 text-white/80'>Your saved profile connects booking, ride updates, and payment status inside the new desktop console.</p>
+                    </div>
+                </div>
+                <div className='flex flex-col justify-between p-6 md:p-10'>
                 <div>
-                    <div className="flex items-center mb-10">
+                    <div className="mb-6 flex justify-end">
+                        <Link
+                            to="/"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+                        >
+                            <i className="ri-home-5-line"></i>
+                            Home
+                        </Link>
+                    </div>
+                    <div className="flex items-center mb-8">
                         <div className="w-16 h-16 bg-gonexi-gradient rounded-2xl flex items-center justify-center shadow-gonexi-lg mr-4">
                             <span className="text-white font-bold text-2xl">G</span>
                         </div>
@@ -84,12 +103,12 @@ const UserSignup = () => {
                         </div>
                     </div>
 
-                    <form onSubmit={(e) => submitHandler(e)}>
-                        <h3 className='text-lg w-1/2 font-medium mb-2'>What's your name</h3>
-                        <div className='flex gap-4 mb-7'>
+                    <form onSubmit={(e) => submitHandler(e)} className='space-y-5'>
+                        <h3 className='text-xl font-bold text-slate-900'>Passenger details</h3>
+                        <div className='grid gap-4 sm:grid-cols-2'>
                             <input
                                 required
-                                className='bg-[#eeeeee] w-1/2 rounded-lg px-4 py-2 border text-lg placeholder:text-base'
+                                className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                                 type="text"
                                 placeholder='First name'
                                 value={firstName}
@@ -97,7 +116,7 @@ const UserSignup = () => {
                             />
                             <input
                                 required
-                                className='bg-[#eeeeee] w-1/2 rounded-lg px-4 py-2 border text-lg placeholder:text-base'
+                                className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                                 type="text"
                                 placeholder='Last name'
                                 value={lastName}
@@ -105,20 +124,17 @@ const UserSignup = () => {
                             />
                         </div>
 
-                        <h3 className='text-lg font-medium mb-2'>What's your email</h3>
                         <input
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
+                            className='w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="email"
                             placeholder='email@example.com'
                         />
 
-                        <h3 className='text-lg font-medium mb-2'>Enter Password</h3>
-
                         <input
-                            className='bg-[#eeeeee] mb-5 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
+                            className='w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -128,21 +144,22 @@ const UserSignup = () => {
 
 
                         
-                        <div className='h-6 text-center mb-2 flex items-center justify-center'>
+                        <div className='min-h-6 text-center flex items-center justify-center'>
                             {error && <p className='text-red-500 text-sm'>{error}</p>}
                         </div>
 
                         <button
-                            className='bg-gonexi-gradient text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
+                            className='bg-gonexi-gradient text-white font-bold rounded-2xl px-4 py-4 w-full text-base shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg'
                         >Create account</button>
 
                     </form>
-                    <p className='text-center'>Already have an account? <Link to='/login' className='text-gonexi-primary'>Login here</Link></p>
+                    <p className='mt-5 text-center text-slate-600'>Already have an account? <Link to='/login' className='font-semibold text-gonexi-primary'>Login here</Link></p>
                 </div>
 
                     <div>
-                    <p className='text-[10px] leading-tight'>This site is protected by reCAPTCHA and the <span className='underline'>Google Privacy
+                    <p className='mt-8 text-[10px] leading-tight text-slate-500'>This site is protected by reCAPTCHA and the <span className='underline'>Google Privacy
                         Policy</span> and <span className='underline'>Terms of Service apply</span>.</p>
+                </div>
                 </div>
             </div>
         </div >

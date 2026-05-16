@@ -168,6 +168,38 @@ module.exports.endRide = async (req, res) => {
     }
 }
 
+module.exports.getAvailableRidesForCaptain = async (req, res) => {
+    try {
+        const rides = await rideService.findAvailableRidesForCaptain({
+            captain: req.captain,
+            limit: Number(req.query.limit) || 10,
+        })
+
+        return res.status(200).json({ rides })
+    } catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+}
+
+module.exports.cancelRide = async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+    }
+
+    try {
+        const ride = await rideService.cancelPendingRideForUser({
+            rideId: req.body.rideId,
+            userId: req.user._id,
+        })
+
+        return res.status(200).json(ride)
+    } catch (err) {
+        const statusCode = err.message === 'Pending ride not found' ? 404 : 500
+        return res.status(statusCode).json({ message: err.message })
+    }
+}
+
 module.exports.getRideById = async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {

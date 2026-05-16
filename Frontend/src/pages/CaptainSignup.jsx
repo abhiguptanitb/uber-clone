@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useContext, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CaptainDataContext } from '../context/CaptainContext'
 import { useNavigate } from 'react-router-dom'
@@ -20,7 +20,7 @@ const CaptainSignup = () => {
 
     const [errorMessage, setErrorMessage] = useState('')
 
-    const { setCaptain } = React.useContext(CaptainDataContext) //when you are not importing the hooks individually
+    const { setCaptain } = useContext(CaptainDataContext)
 
     const submitHandler = async (e) => {
         e.preventDefault()
@@ -112,9 +112,28 @@ const CaptainSignup = () => {
     }
 
     return (
-        <div className='py-2 px-3 sm:px-5 h-screen flex flex-col justify-between bg-gonexi-gradient-light overflow-y-auto'>
-                <div className="flex-1">
-                    <div className="flex items-center mb-4 sm:mb-6">
+        <div className='min-h-screen bg-[#eef2f6] p-4 md:p-8'>
+            <div className='mx-auto grid min-h-[calc(100vh-2rem)] max-w-7xl overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-gonexi-lg lg:grid-cols-[0.8fr_1.2fr]'>
+                <aside className='hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between'>
+                    <div>
+                        <p className='text-sm font-semibold uppercase tracking-[0.22em] text-teal-200'>Driver onboarding</p>
+                        <h1 className='mt-4 text-5xl font-black leading-tight'>Put your vehicle on the GoNexi grid.</h1>
+                    </div>
+                    <div className='rounded-3xl bg-white/10 p-5 backdrop-blur'>
+                        <p className='text-sm leading-6 text-white/75'>Register once, then manage ride requests, OTP starts, live trips, earnings, and payments from the driver console.</p>
+                    </div>
+                </aside>
+                <div className="p-6 md:p-10">
+                    <div className="mb-6 flex justify-end">
+                        <Link
+                            to="/"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-gonexi-primary hover:text-gonexi-primary"
+                        >
+                            <i className="ri-home-5-line"></i>
+                            Home
+                        </Link>
+                    </div>
+                    <div className="flex items-center mb-6">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gonexi-gradient rounded-2xl flex items-center justify-center shadow-gonexi-lg mr-3 sm:mr-4">
                             <i className="ri-steering-2-line text-white text-xl sm:text-2xl"></i>
                         </div>
@@ -124,13 +143,13 @@ const CaptainSignup = () => {
                         </div>
                     </div>
 
-                <form onSubmit={submitHandler}>
+                <form onSubmit={submitHandler} className='space-y-5'>
 
-                    <h3 className='text-base sm:text-lg w-full font-medium mb-2'>What's our Captain's name</h3>
-                    <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5'>
+                    <h3 className='text-xl font-bold text-slate-900'>Captain details</h3>
+                    <div className='grid gap-4 sm:grid-cols-2'>
                         <input
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 sm:py-2 border text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="text"
                             placeholder='First name'
                             value={firstName}
@@ -138,7 +157,7 @@ const CaptainSignup = () => {
                         />
                         <input
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 sm:py-2 border text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="text"
                             placeholder='Last name'
                             value={lastName}
@@ -146,19 +165,17 @@ const CaptainSignup = () => {
                         />
                     </div>
 
-                    <h3 className='text-base sm:text-lg font-medium mb-2'>What's our Captain's email</h3>
                     <input
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className='bg-[#eeeeee] mb-4 sm:mb-5 rounded-lg px-3 sm:px-4 py-2 border w-full text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                        className='w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                         type="email"
                         placeholder='email@example.com'
                     />
 
-                    <h3 className='text-base sm:text-lg font-medium mb-2'>Enter Password</h3>
                     <input
-                        className='bg-[#eeeeee] mb-4 sm:mb-5 rounded-lg px-3 sm:px-4 py-2 border w-full text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                        className='w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -166,12 +183,12 @@ const CaptainSignup = () => {
                         placeholder='password'
                     />
 
-                    <h3 className='text-base sm:text-lg font-medium mb-2'>Vehicle Information</h3>
+                    <h3 className='text-xl font-bold text-slate-900'>Vehicle information</h3>
 
-                    <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5 sm:mb-7'>
+                    <div className='grid gap-4 sm:grid-cols-2'>
                         <input
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 border text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="text"
                             placeholder='Vehicle Color'
                             value={vehicleColor}
@@ -179,17 +196,17 @@ const CaptainSignup = () => {
                         />
                         <input
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 border text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="text"
                             placeholder='Vehicle Plate'
                             value={vehiclePlate}
                             onChange={(e) => setVehiclePlate(e.target.value)}
                         />
                     </div>
-                    <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-5'>
+                    <div className='grid gap-4 sm:grid-cols-2'>
                         <input
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 border text-base sm:text-lg placeholder:text-sm sm:placeholder:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             type="number"
                             placeholder='Vehicle Capacity'
                             value={vehicleCapacity}
@@ -197,7 +214,7 @@ const CaptainSignup = () => {
                         />
                         <select
                             required
-                            className='bg-[#eeeeee] w-full sm:w-1/2 rounded-lg px-3 sm:px-4 py-2 border text-sm sm:text-base'
+                            className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-gonexi-primary focus:bg-white'
                             value={vehicleType}
                             onChange={(e) => setVehicleType(e.target.value)}
                         >
@@ -209,22 +226,21 @@ const CaptainSignup = () => {
                     </div>
 
                     <div 
-                        className="h-6 text-center mb-2 flex items-center justify-center">
+                        className="min-h-6 text-center flex items-center justify-center">
                         {errorMessage && <p className="text-red-500">{errorMessage}</p>}
                     </div>
 
 
                         <button
-                            className='bg-gonexi-gradient text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-base sm:text-lg'
+                            className='bg-gonexi-gradient text-white font-bold rounded-2xl px-4 py-4 w-full text-base shadow-gonexi transition hover:-translate-y-0.5 hover:shadow-gonexi-lg'
                         >Create Captain Account</button>
 
                     </form>
-                    <p className='text-center text-sm sm:text-base'>Already have an account? <Link to='/captain-login' className='text-gonexi-primary'>Login here</Link></p>
-                </div>
-                <div className='mb-3 sm:mb-5'>
-                    <p className='text-[10px] sm:text-xs mt-4 sm:mt-6 leading-tight'>This site is protected by reCAPTCHA and the <span className='underline'>Google Privacy
+                    <p className='mt-5 text-center text-sm sm:text-base text-slate-600'>Already have an account? <Link to='/captain-login' className='font-semibold text-gonexi-primary'>Login here</Link></p>
+                    <p className='text-[10px] sm:text-xs mt-6 leading-tight text-slate-500'>This site is protected by reCAPTCHA and the <span className='underline'>Google Privacy
                     Policy</span> and <span className='underline'>Terms of Service apply</span>.</p>
                 </div>
+            </div>
         </div>
     )
 }
