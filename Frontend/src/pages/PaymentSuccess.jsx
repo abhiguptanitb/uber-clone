@@ -61,15 +61,21 @@ const PaymentSuccess = () => {
     }, [navigate, searchParams])
 
     return (
-        <div className='flex min-h-screen items-center justify-center bg-gray-50 px-6 text-center'>
-            <div className='max-w-md rounded-2xl bg-white p-8 shadow-lg'>
-                <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100'>
-                    <i className='ri-secure-payment-line text-2xl text-green-600'></i>
-                </div>
-                <h1 className='mt-4 text-2xl font-semibold text-gray-900'>Stripe Payment</h1>
-                <p className='mt-3 text-sm leading-6 text-gray-600'>{message}</p>
+        <main className='min-h-screen bg-[#eef2f6] p-4 text-center text-gonexi-dark md:p-6 lg:p-8'>
+            <div className='mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1100px] items-center justify-center rounded-[36px] border border-white/70 bg-white/80 p-6 shadow-gonexi-lg backdrop-blur lg:min-h-[calc(100vh-4rem)]'>
+                <section className='w-full max-w-lg'>
+                    <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] bg-gonexi-gradient shadow-gonexi'>
+                        <i className='ri-secure-payment-line text-4xl text-white'></i>
+                    </div>
+                    <p className='mt-8 text-sm font-semibold uppercase tracking-[0.22em] text-gonexi-primary'>Payment status</p>
+                    <h1 className='mt-3 text-4xl font-black text-slate-950'>Stripe Payment</h1>
+                    <p className='mx-auto mt-4 max-w-md text-base leading-7 text-slate-600'>{message}</p>
+                    <div className='mx-auto mt-8 h-2 w-40 overflow-hidden rounded-full bg-slate-100'>
+                        <div className='h-full w-2/3 animate-pulse rounded-full bg-gonexi-gradient'></div>
+                    </div>
+                </section>
             </div>
-        </div>
+        </main>
     )
 }
 
