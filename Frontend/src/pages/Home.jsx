@@ -31,6 +31,8 @@ const Home = () => {
   const [isApplyingMapLocation, setIsApplyingMapLocation] = useState(false)
   const [mapFocusLocation, setMapFocusLocation] = useState(null)
   const [rideConfidence, setRideConfidence] = useState(null)
+  const [rideRecommendation, setRideRecommendation] = useState(null)
+  const [isRecommendationLoading, setIsRecommendationLoading] = useState(false)
   const [pendingPaymentRide, setPendingPaymentRide] = useState(() => {
     const storedRide = localStorage.getItem("pendingPaymentRide")
     return storedRide ? JSON.parse(storedRide) : null
@@ -269,6 +271,37 @@ const Home = () => {
     return fetchRideConfidence(nextVehicleType)
   }
 
+  const fetchRideRecommendation = async (options) => {
+    if (!pickup || !destination || !options?.length) {
+      setRideRecommendation(null)
+      return
+    }
+
+    try {
+      setIsRecommendationLoading(true)
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/rides/recommendation`,
+        {
+          pickup,
+          destination,
+          options,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      )
+
+      setRideRecommendation(response.data)
+    } catch (error) {
+      console.error("Error fetching ride recommendation:", error)
+      setRideRecommendation(null)
+    } finally {
+      setIsRecommendationLoading(false)
+    }
+  }
+
   const applyCurrentLocationToActiveField = async () => {
     if (isApplyingMapLocation) return
 
@@ -350,6 +383,7 @@ const Home = () => {
     }
 
     setPanelOpen(false)
+    setRideRecommendation(null)
 
     try {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/options`, {
@@ -368,8 +402,10 @@ const Home = () => {
       )
       setVehiclePanel(true)
       setRideConfidence(null)
+      fetchRideRecommendation(options)
     } catch (error) {
       console.error("Error getting fare:", error)
+      setRideRecommendation(null)
       const validationMessage = error.response?.data?.errors?.[0]?.msg
       const serverMessage = error.response?.data?.message
 
@@ -394,6 +430,7 @@ const Home = () => {
           setFare(response.data || {})
           setVehiclePanel(true)
           setRideConfidence(null)
+          fetchRideRecommendation(fallbackOptions)
           return
         } catch (fallbackError) {
           console.error("Error getting fallback fare:", fallbackError)
@@ -616,6 +653,23 @@ const Home = () => {
 
             {vehiclePanel && (
               <section className="rounded-[28px] border border-white/70 bg-white p-4 shadow-gonexi-lg md:p-5">
+                {(isRecommendationLoading || rideRecommendation) && (
+                  <div className="mb-4 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gonexi-gradient text-white">
+                        <i className="ri-sparkling-2-line text-lg"></i>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-gonexi-primary">
+                          {rideRecommendation?.source === "gemini" ? "Gemini Suggestion" : "Smart Suggestion"}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
+                          {isRecommendationLoading ? "Finding the best ride option..." : rideRecommendation?.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <VehiclePanel
                   selectVehicle={selectVehicleType}
                   fare={fare}

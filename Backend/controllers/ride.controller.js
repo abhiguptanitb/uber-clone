@@ -1,4 +1,5 @@
 const rideService = require("../services/ride.service")
+const aiService = require("../services/ai.service")
 const { validationResult } = require("express-validator")
 const { sendMessageToSocketId } = require("../socket")
 const rideModel = require("../models/ride.model")
@@ -175,6 +176,27 @@ module.exports.getRideOptions = async (req, res) => {
     try {
         const options = await rideService.getRideOptions({ pickup, destination })
         return res.status(200).json({ options })
+    } catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+}
+
+module.exports.getRideRecommendation = async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { pickup, destination, options } = req.body
+
+    try {
+        const recommendation = await aiService.getRideRecommendation({
+            pickup,
+            destination,
+            options,
+        })
+
+        return res.status(200).json(recommendation)
     } catch (err) {
         return res.status(500).json({ message: err.message })
     }

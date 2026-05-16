@@ -55,6 +55,14 @@ router.get('/options',
     rideController.getRideOptions
 );
 
+router.post('/recommendation',
+    authMiddleware.authUser,
+    locationBody('pickup', 'Invalid pickup address'),
+    locationBody('destination', 'Invalid destination address'),
+    body('options').isArray({ min: 1 }).withMessage('Ride options are required'),
+    rideController.getRideRecommendation
+);
+
 router.post('/confirm',
     authMiddleware.authCaptain,
     body('rideId').isMongoId().withMessage('Invalid ride id'),
