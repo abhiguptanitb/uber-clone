@@ -120,7 +120,6 @@ const CaptainSignup = () => {
                         <h1 className='mt-4 text-5xl font-black leading-tight'>Put your vehicle on the GoNexi grid.</h1>
                     </div>
                     <div className='rounded-3xl bg-white/10 p-5 backdrop-blur'>
-                        <p className='text-sm leading-6 text-white/75'>Register once, then manage ride requests, OTP starts, live trips, earnings, and payments from the driver console.</p>
                     </div>
                 </aside>
                 <div className="p-6 md:p-10">

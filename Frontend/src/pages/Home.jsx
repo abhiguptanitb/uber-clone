@@ -55,8 +55,8 @@ const Home = () => {
           localStorage.setItem("pickup", result.address)
           localStorage.setItem("isPickupFromCurrentLocation", "true")
         }
-      } catch (error) {
-        console.error("Failed to get initial location:", error)
+      } catch {
+        // Location permission is optional; users can still enter pickup manually.
       }
     }
 
@@ -86,8 +86,8 @@ const Home = () => {
           setPickup(result.address)
           localStorage.setItem("pickup", result.address)
         }
-      } catch (error) {
-        console.error("Error updating pickup location:", error)
+      } catch {
+        // Keep the existing pickup if reverse geocoding fails.
       }
     }
   }
@@ -112,9 +112,7 @@ const Home = () => {
                 },
               })
             },
-            (error) => {
-              console.error("Error in periodic location update:", error)
-            },
+            () => undefined,
             {
               enableHighAccuracy: false,
               timeout: 5000,
@@ -167,8 +165,8 @@ const Home = () => {
 
         setPendingPaymentRide(null)
         localStorage.removeItem("pendingPaymentRide")
-      } catch (error) {
-        console.error("Error fetching pending payment ride:", error)
+      } catch {
+        // Pending payment state will be refreshed on the next successful check.
       }
     }
 
@@ -194,8 +192,8 @@ const Home = () => {
           },
         })
         setPickupSuggestions(response.data)
-      } catch (error) {
-        console.error("Error fetching pickup suggestions:", error)
+      } catch {
+        // Suggestions are optional while typing.
       }
     }
   }
@@ -214,8 +212,8 @@ const Home = () => {
           },
         })
         setDestinationSuggestions(response.data)
-      } catch (error) {
-        console.error("Error fetching destination suggestions:", error)
+      } catch {
+        // Suggestions are optional while typing.
       }
     }
   }
@@ -236,8 +234,8 @@ const Home = () => {
         lng: response.data.lng,
         zoom: field === "destination" ? 13 : 14,
       })
-    } catch (error) {
-      console.error("Error focusing map on address:", error)
+    } catch {
+      // Map focus is optional when geocoding fails.
     }
   }
 
@@ -258,8 +256,7 @@ const Home = () => {
 
       setRideConfidence(response.data)
       return response.data
-    } catch (error) {
-      console.error("Error fetching ride confidence:", error)
+    } catch {
       setRideConfidence(null)
       return null
     }
@@ -294,8 +291,7 @@ const Home = () => {
       )
 
       setRideRecommendation(response.data)
-    } catch (error) {
-      console.error("Error fetching ride recommendation:", error)
+    } catch {
       setRideRecommendation(null)
     } finally {
       setIsRecommendationLoading(false)
@@ -337,8 +333,7 @@ const Home = () => {
       }
 
       setPanelOpen(false)
-    } catch (error) {
-      console.error("Error applying current location:", error)
+    } catch {
       alert("Unable to use current location. Please allow location access and try again.")
     } finally {
       setIsApplyingMapLocation(false)
@@ -366,8 +361,8 @@ const Home = () => {
       }
 
       setPanelOpen(false)
-    } catch (error) {
-      console.error("Error applying map location:", error)
+    } catch {
+      // Keep the current field value if reverse geocoding fails.
     }
   }
 
@@ -404,7 +399,6 @@ const Home = () => {
       setRideConfidence(null)
       fetchRideRecommendation(options)
     } catch (error) {
-      console.error("Error getting fare:", error)
       setRideRecommendation(null)
       const validationMessage = error.response?.data?.errors?.[0]?.msg
       const serverMessage = error.response?.data?.message
@@ -433,7 +427,6 @@ const Home = () => {
           fetchRideRecommendation(fallbackOptions)
           return
         } catch (fallbackError) {
-          console.error("Error getting fallback fare:", fallbackError)
           const fallbackValidationMessage = fallbackError.response?.data?.errors?.[0]?.msg
           const fallbackServerMessage = fallbackError.response?.data?.message
           alert(fallbackValidationMessage || fallbackServerMessage || "Error getting fare. Please try again.")
@@ -471,8 +464,7 @@ const Home = () => {
         setVehicleFound(true)
         setConfirmRidePanel(false)
       }
-    } catch (error) {
-      console.error("Error creating ride:", error)
+    } catch {
       alert("Error creating ride. Please try again.")
     }
   }
@@ -500,7 +492,6 @@ const Home = () => {
       setRide(null)
       localStorage.removeItem("activeRide")
     } catch (error) {
-      console.error("Error cancelling ride request:", error)
       alert(error.response?.data?.message || "Unable to cancel this ride request.")
     }
   }
@@ -520,8 +511,8 @@ const Home = () => {
       localStorage.removeItem("activeRide")
       localStorage.removeItem("pendingPaymentRide")
       navigate("/login")
-    } catch (error) {
-      console.error("Error logging out:", error)
+    } catch {
+      // Logout failures leave the user on the current page.
     }
   }
 
@@ -537,7 +528,7 @@ const Home = () => {
               <span className="text-2xl font-black text-white">G</span>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Passenger Console</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Passenger Dashboard</p>
               <h1 className="text-2xl font-bold text-gonexi-dark">Good to see you, {userName}</h1>
             </div>
           </div>

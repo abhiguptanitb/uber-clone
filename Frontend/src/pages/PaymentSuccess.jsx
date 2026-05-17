@@ -48,8 +48,7 @@ const PaymentSuccess = () => {
                 setTimeout(() => {
                     navigate(`/riding?ride_id=${rideId}`)
                 }, 1500)
-            } catch (error) {
-                console.error('Error verifying payment:', error)
+            } catch {
                 setMessage('We could not verify your payment right now. Redirecting you back to the ride page...')
                 setTimeout(() => {
                     navigate(`/riding?ride_id=${rideId}`)

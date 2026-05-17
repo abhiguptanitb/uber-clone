@@ -31,8 +31,8 @@ const CaptainHome = () => {
     const initializeLocation = async () => {
       try {
         await requestLocationPermission()
-      } catch (error) {
-        console.error("Failed to get initial location:", error)
+      } catch {
+        // Location permission is optional here; the map can keep its fallback state.
       }
     }
     initializeLocation()
@@ -65,9 +65,7 @@ const CaptainHome = () => {
                 },
               })
             },
-            (error) => {
-              console.error("Error in periodic captain location update:", error)
-            },
+            () => undefined,
             {
               enableHighAccuracy: false,
               timeout: 5000,
@@ -96,8 +94,8 @@ const CaptainHome = () => {
       )
 
       setVehicleType(response.data.vehicleType)
-    } catch (error) {
-      console.error("Error fetching vehicle type:", error)
+    } catch {
+      // Vehicle details are shown when available.
     }
   }
 
@@ -113,8 +111,8 @@ const CaptainHome = () => {
       setEarningsToday(response.data.earningsToday || 0)
       setRidesToday(response.data.ridesToday || 0)
       setPaidRidesToday(response.data.paidRidesToday || 0)
-    } catch (error) {
-      console.error("Error fetching captain earnings:", error)
+    } catch {
+      // Earnings stay at their default values if the request fails.
     }
   }
 
@@ -123,8 +121,7 @@ const CaptainHome = () => {
 
     try {
       return JSON.parse(localStorage.getItem(dismissedStorageKey) || "[]")
-    } catch (error) {
-      console.error("Error reading dismissed ride requests:", error)
+    } catch {
       return []
     }
   }
@@ -171,11 +168,9 @@ const CaptainHome = () => {
 
       if (status === 404) {
         setQueueNotice("Ride queue endpoint is not available on the running backend. Restart the backend server, then check again.")
-        console.warn("Ride queue endpoint returned 404. The backend process may need a restart.")
         return null
       }
 
-      console.error("Error fetching available rides:", error)
       setQueueNotice(error.response?.data?.message || "Unable to refresh the ride queue right now.")
       return []
     } finally {
@@ -243,7 +238,6 @@ const CaptainHome = () => {
       setAvailableRides((currentRides) => currentRides.filter((availableRide) => availableRide._id !== rideId))
       setQueueNotice("")
     } catch (error) {
-      console.error("Error confirming ride:", error)
       setRidePopupPanel(false)
       setConfirmRidePopupPanel(false)
       setAvailableRides((currentRides) => currentRides.filter((availableRide) => availableRide._id !== rideId))
@@ -264,8 +258,8 @@ const CaptainHome = () => {
       })
       localStorage.removeItem("token")
       navigate("/captain-login")
-    } catch (error) {
-      console.error("Error logging out:", error)
+    } catch {
+      // Logout failures leave the captain on the current page.
     }
   }
 
@@ -308,7 +302,7 @@ const CaptainHome = () => {
               <i className="ri-steering-2-line text-2xl text-white"></i>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Driver Console</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gonexi-primary">Driver Dashboard</p>
               <h1 className="text-2xl font-bold text-gonexi-dark">{captainName}</h1>
             </div>
           </div>

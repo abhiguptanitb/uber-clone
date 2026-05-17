@@ -33,18 +33,16 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
         setPermissionStatus(permission.state)
 
         permission.onchange = () => {
-          // console.log("📍 Permission changed to:", permission.state)
           setPermissionStatus(permission.state)
         }
       }
-    } catch (error) {
-      console.error("Error checking permission:", error)
+    } catch {
+      // Permission API support varies by browser; continue with geolocation fallback.
     }
   }
 
   // Use default location when permission is denied
   const applyDefaultLocation = () => {
-    // console.log("🌍 Using default location (New Delhi)")
     const newViewState = {
       longitude: DEFAULT_LOCATION.lng,
       latitude: DEFAULT_LOCATION.lat,
@@ -74,10 +72,8 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
 
     autoRetryIntervalRef.current = setInterval(() => {
       if (navigator.geolocation && permissionStatus !== "denied") {
-        // console.log("🔄 Auto-checking for location permission...")
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            // console.log("✅ Location permission granted automatically!")
             const { latitude, longitude } = position.coords
             const newPosition = { lat: latitude, lng: longitude }
             const newViewState = {
@@ -101,7 +97,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
           },
           () => {
             // Silently continue with default location
-            // console.log("📍 Still using default location")
           },
           {
             enableHighAccuracy: false,
@@ -135,12 +130,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
-        // console.log("🎯 Location obtained:", {
-        //   latitude,
-        //   longitude,
-        //   accuracy: position.coords.accuracy,
-        //   attempt: retryCount + 1,
-        // })
 
         const newPosition = { lat: latitude, lng: longitude }
         const newViewState = {
@@ -164,7 +153,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
         startWatchingLocation()
       },
       (error) => {
-        console.error("❌ Location error:", error)
         handleLocationError(error)
       },
       {
@@ -179,7 +167,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
   const handleLocationError = (error) => {
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        // console.log("❌ Location permission denied, using default location")
         setUsingDefaultLocation(true)
         applyDefaultLocation()
         return
@@ -201,7 +188,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
     if (retryCount < 5) {
       // Max 5 retries
       const delay = Math.min(1000 * Math.pow(2, retryCount), 10000) // 1s, 2s, 4s, 8s, 10s
-      // console.log(`🔄 Retrying location in ${delay}ms (attempt ${retryCount + 1})`)
 
       retryTimeoutRef.current = setTimeout(() => {
         setRetryCount((prev) => prev + 1)
@@ -218,12 +204,6 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords
-        // console.log("📍 Location updated:", {
-        //   latitude,
-        //   longitude,
-        //   accuracy: position.coords.accuracy,
-        //   timestamp: new Date().toLocaleTimeString(),
-        // })
 
         const newPosition = { lat: latitude, lng: longitude }
         setCurrentPosition(newPosition)
@@ -240,10 +220,7 @@ const LiveTracking = ({ onLocationUpdate, focusLocation, onMapClick, showStatusI
           onLocationUpdate(newPosition)
         }
       },
-      (error) => {
-        console.error("❌ Watch position error:", error)
-        // Don't show error for watch position failures, just log them
-      },
+      () => {},
       {
         enableHighAccuracy: true,
         timeout: 10000,

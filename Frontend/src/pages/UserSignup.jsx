@@ -79,7 +79,6 @@ const UserSignup = () => {
                         <h1 className='mt-4 text-5xl font-black leading-tight'>Create your ride profile.</h1>
                     </div>
                     <div className='rounded-3xl bg-white/15 p-5 backdrop-blur'>
-                        <p className='text-sm leading-6 text-white/80'>Your saved profile connects booking, ride updates, and payment status inside the new desktop console.</p>
                     </div>
                 </div>
                 <div className='flex flex-col justify-between p-6 md:p-10'>

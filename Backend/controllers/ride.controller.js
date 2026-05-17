@@ -17,15 +17,12 @@ module.exports.createRide = async (req, res) => {
     const { pickup, destination, vehicleType } = req.body
 
     try {
-    const { pickupCoordinates, matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
+    const { matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
         pickup,
         vehicleType,
     })
-    console.log("Pickup coordinates:", pickupCoordinates)
-    console.log("Matching captains found:", matchingCaptains.length)
 
     if (matchingCaptains.length === 0) {
-        console.log("No matching captains found for vehicle type:", vehicleType)
         return res.status(404).json({ message: "No drivers available for this vehicle type" })
     }
 
@@ -43,7 +40,6 @@ module.exports.createRide = async (req, res) => {
 
     // Send ride info to matching captains only
     matchingCaptains.forEach((captain) => {
-        console.log(`Sending ride to captain ${captain._id} with socket ${captain.socketId}`)
         sendMessageToSocketId(captain.socketId, {
         event: "new-ride",
         data: { ...rideWithUser._doc, vehicleType },
@@ -52,7 +48,6 @@ module.exports.createRide = async (req, res) => {
 
     res.status(201).json(ride)
     } catch (err) {
-        console.log(err)
         const statusCode = err.message === 'Complete your pending ride payment before booking another ride' ? 409 : 500
         return res.status(statusCode).json({ message: err.message })
     }
@@ -92,7 +87,6 @@ module.exports.confirmRide = async (req, res) => {
 
         return res.status(200).json(ride)
     } catch (err) {
-        console.log(err)
         const statusCode = err.message === 'Ride is no longer available' ? 409 : 500
         return res.status(statusCode).json({ message: err.message })
     }
@@ -108,8 +102,6 @@ module.exports.startRide = async (req, res) => {
 
     try {
         const ride = await rideService.startRide({ rideId, otp, captain: req.captain })
-
-        console.log(ride)
 
         sendMessageToSocketId(ride.user.socketId, {
         event: "ride-started",

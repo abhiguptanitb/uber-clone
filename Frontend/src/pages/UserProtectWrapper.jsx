@@ -36,8 +36,7 @@ const UserProtectWrapper = ({
                     } else {
                         localStorage.removeItem('pendingPaymentRide')
                     }
-                } catch (pendingPaymentError) {
-                    console.error('Pending payment route is unavailable:', pendingPaymentError)
+                } catch {
                     localStorage.removeItem('pendingPaymentRide')
                 }
 

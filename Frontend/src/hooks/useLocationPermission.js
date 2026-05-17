@@ -17,12 +17,11 @@ export const useLocationPermission = () => {
 
       if (data.features && data.features.length > 0) {
         const address = data.features[0].place_name
-        // console.log("📍 Address found:", address)
         return address
       }
       return null
-    } catch (error) {
-      console.error("Error getting address:", error)
+    } catch {
+      // Address lookup is optional; callers can use raw coordinates.
       return null
     }
   }, [])
@@ -38,8 +37,8 @@ export const useLocationPermission = () => {
           setPermissionStatus(permission.state)
         }
       }
-    } catch (error) {
-      console.error("Error checking geolocation permission:", error)
+    } catch {
+      // Some browsers do not expose the Permissions API for geolocation.
     }
   }, [])
 
@@ -72,7 +71,6 @@ export const useLocationPermission = () => {
             setCurrentAddress(address)
           }
 
-          // console.log("✅ Location permission granted:", { location, address })
           resolve({ location, address })
         },
         (error) => {
@@ -93,7 +91,6 @@ export const useLocationPermission = () => {
           }
 
           setError(errorMessage)
-          console.error("❌ Location permission error:", errorMessage)
           reject(error)
         },
         {

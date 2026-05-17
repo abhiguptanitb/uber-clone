@@ -8,7 +8,6 @@ module.exports.getAddressCoordinate = async (address) => {
 
     try {
         const response = await axios.get(url)
-        console.log("Mapbox API Response:", response.data)
         if (response.data.features && response.data.features.length > 0) {
         const location = response.data.features[0].geometry.coordinates
         return {
@@ -18,9 +17,8 @@ module.exports.getAddressCoordinate = async (address) => {
         } else {
         throw new Error("Unable to fetch coordinates")
         }
-    } catch (error) {
-        console.error(error)
-        throw error
+    } catch (err) {
+        throw err
     }
 }
 
@@ -34,13 +32,11 @@ module.exports.getDistanceTime = async (originAddress, destinationAddress) => {
 
     const originCoords = `${origin.lng},${origin.lat}` // Changed from 'ltd' to 'lat'
     const destinationCoords = `${destination.lng},${destination.lat}` // Changed from 'ltd' to 'lat'
-    console.log(originCoords, destinationCoords)
 
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords};${destinationCoords}?access_token=${mapboxToken}&overview=full`
 
     try {
         const response = await axios.get(url)
-        console.log("Mapbox API Response:", response.data)
         if (response.data.routes && response.data.routes.length > 0) {
         const route = response.data.routes[0]
         return {
@@ -51,7 +47,6 @@ module.exports.getDistanceTime = async (originAddress, destinationAddress) => {
         throw new Error("No routes found")
         }
     } catch (err) {
-        console.error(err)
         throw err
     }
 }
@@ -65,14 +60,12 @@ module.exports.getAutoCompleteSuggestions = async (input) => {
 
     try {
         const response = await axios.get(url)
-        console.log("Mapbox API Response:", response.data)
         if (response.data.features) {
         return response.data.features.map((feature) => feature.place_name).filter((value) => value)
         } else {
         throw new Error("Unable to fetch suggestions")
         }
     } catch (err) {
-        console.error(err)
         throw err
     }
 }

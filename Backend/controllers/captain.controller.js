@@ -30,7 +30,6 @@ module.exports.registerCaptain = async (req, res, next) => {
     }
 
     const { fullname, email, password, vehicle } = req.body;
-    console.log(req.body)
 
     const isCaptainAlreadyExist = await captainModel.findOne({ email });
 
@@ -114,8 +113,7 @@ module.exports.getVehicleType = async (req, res, next) => {
         const vehicleType = captain.vehicle.vehicleType;
 
         res.status(200).json({ vehicleType });
-    } catch (error) {
-        console.error(error);
+    } catch {
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -176,8 +174,7 @@ module.exports.getCaptainEarnings = async (req, res, next) => {
             ridesToday: ridesStats[0]?.ridesToday || 0,
             paidRidesToday: ridesStats[0]?.paidRidesToday || 0,
         });
-    } catch (error) {
-        console.error(error);
+    } catch {
         res.status(500).json({ message: 'Server error' });
     }
 };

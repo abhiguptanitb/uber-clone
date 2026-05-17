@@ -51,9 +51,7 @@ module.exports.authCaptain = async (req, res, next) => {
         req.captain = captain;
 
         return next()
-    } catch (err) {
-        console.log(err);
-
+    } catch {
         res.status(401).json({ message: 'Unauthorized' });
     }
 }

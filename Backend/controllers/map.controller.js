@@ -12,8 +12,7 @@ module.exports.getCoordinates = async (req, res, next) => {
     try {
         const coordinates = await mapService.getAddressCoordinate(address); // Mapbox implementation
         res.status(200).json(coordinates);
-    } catch (error) {
-        console.error(error);
+    } catch {
         res.status(404).json({ message: 'Coordinates not found' });
     }
 };
@@ -25,13 +24,11 @@ module.exports.getDistanceTime = async (req, res, next) => {
     }
 
     const { origin, destination } = req.query;
-    console.log("query recieved", req.query);
 
     try {
         const distanceTime = await mapService.getDistanceTime(origin, destination); // Mapbox implementation
         res.status(200).json(distanceTime);
-    } catch (err) {
-        console.error(err);
+    } catch {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -47,8 +44,7 @@ module.exports.getAutoCompleteSuggestions = async (req, res, next) => {
     try {
         const suggestions = await mapService.getAutoCompleteSuggestions(input); // Mapbox implementation
         res.status(200).json(suggestions);
-    } catch (err) {
-        console.error(err);
+    } catch {
         res.status(500).json({ message: 'Internal server error' });
     }
 };

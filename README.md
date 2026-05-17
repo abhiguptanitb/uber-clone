@@ -32,8 +32,8 @@ GoNexi is a full-stack ride booking platform built with a React/Vite frontend an
 
 GoNexi has two main user experiences:
 
-- Passenger console for booking and tracking rides.
-- Captain console for going online, receiving ride requests, accepting rides, and viewing earnings.
+- Passenger dashboard for booking and tracking rides.
+- Captain dashboard for going online, receiving ride requests, accepting rides, and viewing earnings.
 
 The app uses Socket.io for live dispatch and location updates. Mapbox handles search, geocoding, distance, duration, and maps. Stripe handles completed ride payments. Gemini adds a small AI suggestion layer that recommends one ride option after fares are loaded.
 
@@ -116,7 +116,7 @@ If `GEMINI_API_KEY` is not configured or Gemini fails, GoNexi falls back to a lo
            |                            |                            |
            v                            v                            v
 +--------------------+       +--------------------+       +--------------------+
-| Passenger Console  |       | Captain Console    |       | Protected Routing  |
+| Passenger Dashboard|       | Captain Dashboard  |       | Protected Routing  |
 | Booking Flow       |       | Ride Queue         |       | User/Captain Auth  |
 | Fare Options       |       | Earnings           |       | JWT Storage        |
 +---------+----------+       +---------+----------+       +---------+----------+

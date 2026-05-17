@@ -68,8 +68,7 @@ const Riding = () => {
         })
 
         persistRide(response.data)
-      } catch (error) {
-        console.error("Error fetching ride details:", error)
+      } catch {
         navigate("/home")
       }
     }
@@ -133,7 +132,6 @@ const Riding = () => {
         window.location.href = response.data.sessionUrl
       }
     } catch (error) {
-      console.error("Error starting payment:", error)
       const message = error.response?.data?.message || "Unable to start Stripe payment right now."
       setRideMessage(message)
     } finally {

@@ -122,8 +122,7 @@ Options: ${JSON.stringify(options)}
             message: parsed.message,
             source: 'gemini',
         };
-    } catch (error) {
-        console.error('Gemini recommendation error:', error.response?.data || error.message);
+    } catch {
         return fallback;
     }
 };
