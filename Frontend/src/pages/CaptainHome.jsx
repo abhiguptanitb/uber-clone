@@ -184,7 +184,7 @@ const CaptainHome = () => {
   }, [])
 
   useEffect(() => {
-    socket.on("new-ride", (data) => {
+    const handleNewRide = (data) => {
       const isMatching = data.vehicleType === vehicleType
       const isDismissed = getDismissedRideIds().includes(data._id)
 
@@ -199,10 +199,29 @@ const CaptainHome = () => {
       setRide(incomingRide)
       setRidePopupPanel(isMatching)
       setQueueNotice(isMatching ? "A matching ride is available for review." : "")
-    })
+    }
 
-    return () => socket.off("new-ride")
-  }, [socket, vehicleType])
+    const handleRideCancelled = (cancelledRide) => {
+      const cancelledRideId = cancelledRide?._id
+
+      if (!cancelledRideId) return
+
+      setAvailableRides((currentRides) => currentRides.filter((currentRide) => currentRide._id !== cancelledRideId))
+      if (ride?._id === cancelledRideId) {
+        setRidePopupPanel(false)
+        setRide(null)
+      }
+      setQueueNotice("A passenger cancelled a ride request, so it was removed from your queue.")
+    }
+
+    socket.on("new-ride", handleNewRide)
+    socket.on("ride-cancelled", handleRideCancelled)
+
+    return () => {
+      socket.off("new-ride", handleNewRide)
+      socket.off("ride-cancelled", handleRideCancelled)
+    }
+  }, [ride, socket, vehicleType])
 
   useEffect(() => {
     const handleRidePaymentCompleted = (updatedRide) => {

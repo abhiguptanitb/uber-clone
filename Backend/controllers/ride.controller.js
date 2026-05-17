@@ -17,7 +17,7 @@ module.exports.createRide = async (req, res) => {
     const { pickup, destination, vehicleType } = req.body
 
     try {
-    const { matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
+    const { pickupCoordinates, matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
         pickup,
         vehicleType,
     })
@@ -39,12 +39,18 @@ module.exports.createRide = async (req, res) => {
     const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate("user")
 
     // Send ride info to matching captains only
-    matchingCaptains.forEach((captain) => {
+    await Promise.all(matchingCaptains.map(async (captain) => {
+        const rideForCaptain = await rideService.buildRideMatchForCaptain({
+            ride: rideWithUser,
+            captain,
+            pickupCoordinates,
+        })
+
         sendMessageToSocketId(captain.socketId, {
         event: "new-ride",
-        data: { ...rideWithUser._doc, vehicleType },
+        data: { ...rideForCaptain, vehicleType },
         })
-    })
+    }))
 
     res.status(201).json(ride)
     } catch (err) {
@@ -218,6 +224,22 @@ module.exports.cancelRide = async (req, res) => {
             rideId: req.body.rideId,
             userId: req.user._id,
         })
+
+        try {
+            const { matchingCaptains } = await rideService.findMatchingCaptainsForPickup({
+                pickup: ride.pickup,
+                vehicleType: ride.vehicleType,
+            })
+
+            matchingCaptains.forEach((captain) => {
+                sendMessageToSocketId(captain.socketId, {
+                    event: "ride-cancelled",
+                    data: ride,
+                })
+            })
+        } catch {
+            // The cancellation is already saved; realtime cleanup can recover on the next queue refresh.
+        }
 
         return res.status(200).json(ride)
     } catch (err) {

@@ -68,6 +68,46 @@ const getRideCreatedAt = (ride) => {
     return ride?._id?.getTimestamp?.() || new Date();
 }
 
+const buildRideMatchForCaptain = async ({ ride, captain, pickupCoordinates: knownPickupCoordinates = null }) => {
+    const rideObject = typeof ride.toObject === 'function'
+        ? ride.toObject()
+        : { ...(ride?._doc || ride) };
+    const vehicleType = rideObject.vehicleType;
+    let pickupCoordinates = knownPickupCoordinates;
+    let pickupDistanceKm = getDistanceKm(captain.location, pickupCoordinates);
+
+    if (pickupDistanceKm === null) {
+        try {
+            pickupCoordinates = await mapService.getAddressCoordinate(rideObject.pickup);
+            pickupDistanceKm = getDistanceKm(captain.location, pickupCoordinates);
+        } catch (error) {
+            pickupCoordinates = null;
+        }
+    }
+
+    const distanceScore = pickupDistanceKm === null
+        ? 45
+        : Math.max(0, 100 - Math.round(pickupDistanceKm * 9));
+    const fareScore = Math.min(35, Math.round((rideObject.fare || 0) / 45));
+    const createdAt = getRideCreatedAt(rideObject);
+    const freshnessScore = Math.max(0, 20 - Math.floor((Date.now() - createdAt.getTime()) / 60000));
+    const matchScore = Math.min(100, distanceScore + fareScore + freshnessScore);
+
+    return {
+        ...rideObject,
+        pickupCoordinates,
+        pickupDistanceKm: pickupDistanceKm === null ? null : Number(pickupDistanceKm.toFixed(1)),
+        estimatedPickupMinutes: pickupDistanceKm === null ? null : Math.max(2, Math.round(pickupDistanceKm * 3)),
+        matchScore,
+        matchLabel: getConfidenceLabel(matchScore),
+        matchReasons: [
+            pickupDistanceKm === null ? 'Pickup distance unavailable' : `${pickupDistanceKm.toFixed(1)} km pickup`,
+            `Rs. ${rideObject.fare} fare`,
+            vehicleType === captain.vehicle?.vehicleType ? 'Vehicle type match' : 'Vehicle type check',
+        ],
+    };
+}
+
 module.exports.findMatchingCaptainsForPickup = async ({ pickup, vehicleType }) => {
     if (!pickup || !vehicleType) {
         throw new Error('Pickup and vehicle type are required');
@@ -194,43 +234,12 @@ module.exports.findAvailableRidesForCaptain = async ({ captain, limit = 10 }) =>
         .sort({ createdAt: -1, _id: -1 })
         .limit(limit);
 
-    const rankedRides = await Promise.all(rides.map(async (ride) => {
-        const rideObject = ride.toObject();
-        let pickupCoordinates = null;
-        let pickupDistanceKm = null;
-
-        try {
-            pickupCoordinates = await mapService.getAddressCoordinate(ride.pickup);
-            pickupDistanceKm = getDistanceKm(captain.location, pickupCoordinates);
-        } catch (error) {
-            pickupCoordinates = null;
-        }
-
-        const distanceScore = pickupDistanceKm === null
-            ? 45
-            : Math.max(0, 100 - Math.round(pickupDistanceKm * 9));
-        const fareScore = Math.min(35, Math.round((ride.fare || 0) / 45));
-        const createdAt = getRideCreatedAt(ride);
-        const freshnessScore = Math.max(0, 20 - Math.floor((Date.now() - createdAt.getTime()) / 60000));
-        const matchScore = Math.min(100, distanceScore + fareScore + freshnessScore);
-
-        return {
-            ...rideObject,
-            pickupCoordinates,
-            pickupDistanceKm: pickupDistanceKm === null ? null : Number(pickupDistanceKm.toFixed(1)),
-            estimatedPickupMinutes: pickupDistanceKm === null ? null : Math.max(2, Math.round(pickupDistanceKm * 3)),
-            matchScore,
-            matchLabel: getConfidenceLabel(matchScore),
-            matchReasons: [
-                pickupDistanceKm === null ? 'Pickup distance unavailable' : `${pickupDistanceKm.toFixed(1)} km pickup`,
-                `Rs. ${ride.fare} fare`,
-                vehicleType === captain.vehicle?.vehicleType ? 'Vehicle type match' : 'Vehicle type check',
-            ],
-        };
-    }));
+    const rankedRides = await Promise.all(rides.map((ride) => buildRideMatchForCaptain({ ride, captain })));
 
     return rankedRides.sort((a, b) => b.matchScore - a.matchScore);
 }
+
+module.exports.buildRideMatchForCaptain = buildRideMatchForCaptain;
 
 module.exports.getRideConfidence = async ({ pickup, destination, vehicleType }) => {
     if (!pickup || !destination || !vehicleType) {
