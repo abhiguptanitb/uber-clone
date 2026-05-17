@@ -53,6 +53,21 @@ const getOnlineCaptainQuery = () => ({
     'location.lng': { $exists: true },
 });
 
+const getRideCreatedAt = (ride) => {
+    if (ride?.createdAt instanceof Date) {
+        return ride.createdAt;
+    }
+
+    if (ride?.createdAt) {
+        const createdAt = new Date(ride.createdAt);
+        if (!Number.isNaN(createdAt.getTime())) {
+            return createdAt;
+        }
+    }
+
+    return ride?._id?.getTimestamp?.() || new Date();
+}
+
 module.exports.findMatchingCaptainsForPickup = async ({ pickup, vehicleType }) => {
     if (!pickup || !vehicleType) {
         throw new Error('Pickup and vehicle type are required');
@@ -196,7 +211,8 @@ module.exports.findAvailableRidesForCaptain = async ({ captain, limit = 10 }) =>
             ? 45
             : Math.max(0, 100 - Math.round(pickupDistanceKm * 9));
         const fareScore = Math.min(35, Math.round((ride.fare || 0) / 45));
-        const freshnessScore = Math.max(0, 20 - Math.floor((Date.now() - ride.createdAt.getTime()) / 60000));
+        const createdAt = getRideCreatedAt(ride);
+        const freshnessScore = Math.max(0, 20 - Math.floor((Date.now() - createdAt.getTime()) / 60000));
         const matchScore = Math.min(100, distanceScore + fareScore + freshnessScore);
 
         return {

@@ -57,7 +57,7 @@ The app uses Socket.io for live dispatch and location updates. Mapbox handles se
 - Vehicle profile with vehicle type, color, plate, and capacity
 - Online status and live location sharing
 - Realtime ride requests through Socket.io
-- Matching ride queue for available pending rides
+- Matching ride queue for available pending rides, ranked by pickup distance, fare, and request freshness
 - Accept ride, start ride with OTP, and complete ride
 - Daily earnings and paid ride stats
 - Logout/disconnect cleanup so offline captains stop showing as available
@@ -340,7 +340,7 @@ http://localhost:5173
 | GET | `/rides/confidence` | Match confidence for selected vehicle | User |
 | POST | `/rides/create` | Create ride and notify captains | User |
 | POST | `/rides/confirm` | Captain accepts ride | Captain |
-| GET | `/rides/captain/available` | Captain ride queue | Captain |
+| GET | `/rides/captain/available` | Captain ride queue with match scores | Captain |
 | POST | `/rides/cancel` | Cancel pending ride | User |
 | GET | `/rides/start-ride` | Start ride using OTP | Captain |
 | POST | `/rides/end-ride` | Complete ride | Captain |
@@ -392,6 +392,7 @@ npm run lint
 - Keep real API keys out of git.
 - `GEMINI_API_KEY` is optional because the app has a rule-based fallback.
 - Passenger availability depends on active captains with fresh socket heartbeats.
+- Ride documents use Mongoose timestamps; the captain queue also falls back to the MongoDB ObjectId timestamp for older rides without `createdAt`.
 - If a captain logs out, their `status` becomes inactive and `socketId` is cleared.
 - Frontend `VITE_BASE_URL` must match the backend port.
 
