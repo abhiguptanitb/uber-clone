@@ -9,11 +9,10 @@ const ConfirmRidePopUp = (props) => {
   const submitHander = async (e) => {
     e.preventDefault()
 
-    const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/start-ride`, {
-      params: {
-        rideId: props.ride._id,
-        otp,
-      },
+    const response = await axios.patch(`${import.meta.env.VITE_BASE_URL}/rides/start-ride`, {
+      rideId: props.ride._id,
+      otp,
+    }, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },

@@ -63,24 +63,6 @@ const rideSchema = new mongoose.Schema({
         default: 'pending',
     },
 
-    // duration: {
-    //     type: Number,
-    // }, // in seconds
-
-    // distance: {
-    //     type: Number,
-    // }, // in meters
-
-    // paymentID: {
-    //     type: String,
-    // },
-    // orderId: {
-    //     type: String,
-    // },
-    // signature: {
-    //     type: String,
-    // },
-
     otp: {
         type: String,
         select: false,

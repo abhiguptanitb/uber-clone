@@ -342,7 +342,7 @@ http://localhost:5173
 | POST | `/rides/confirm` | Captain accepts ride | Captain |
 | GET | `/rides/captain/available` | Captain ride queue with match scores | Captain |
 | POST | `/rides/cancel` | Cancel pending ride | User |
-| GET | `/rides/start-ride` | Start ride using OTP | Captain |
+| PATCH | `/rides/start-ride` | Start ride using OTP | Captain |
 | POST | `/rides/end-ride` | Complete ride | Captain |
 | POST | `/rides/payment/checkout-session` | Create Stripe checkout | User |
 | GET | `/rides/payment/verify` | Verify Stripe payment | User |
