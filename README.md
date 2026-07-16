@@ -13,20 +13,37 @@ GoNexi is a full-stack ride booking platform built with a React/Vite frontend an
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Current Features](#current-features)
-- [AI Features](#ai-features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Services and Ports](#services-and-ports)
-- [Environment Variables](#environment-variables)
-- [Installation](#installation)
-- [Running Locally](#running-locally)
-- [API Map](#api-map)
-- [Demo Flow](#demo-flow)
-- [Build](#build)
-- [Notes](#notes)
+- [GoNexi](#gonexi)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Current Features](#current-features)
+    - [Passenger](#passenger)
+    - [Captain](#captain)
+    - [Realtime Dispatch](#realtime-dispatch)
+  - [AI Features](#ai-features)
+    - [Gemini Ride Recommendation](#gemini-ride-recommendation)
+  - [Architecture](#architecture)
+  - [Tech Stack](#tech-stack)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+  - [Project Structure](#project-structure)
+  - [Services and Ports](#services-and-ports)
+  - [Environment Variables](#environment-variables)
+    - [Backend `.env`](#backend-env)
+    - [Frontend `.env`](#frontend-env)
+  - [Installation](#installation)
+  - [Running Locally](#running-locally)
+  - [API Map](#api-map)
+    - [Users](#users)
+    - [Captains](#captains)
+    - [Maps](#maps)
+    - [Rides](#rides)
+  - [Demo Flow](#demo-flow)
+    - [Passenger](#passenger-1)
+    - [Captain](#captain-1)
+  - [Build](#build)
+  - [Notes](#notes)
+  - [Author](#author)
 
 ## Overview
 
@@ -107,46 +124,73 @@ If `GEMINI_API_KEY` is not configured or Gemini fails, GoNexi falls back to a lo
 ## Architecture
 
 ```text
-                         +-----------------------------+
-                         |          Frontend           |
-                         |     React + Vite + CSS      |
-                         +--------------+--------------+
-                                        |
-           +----------------------------+----------------------------+
-           |                            |                            |
-           v                            v                            v
-+--------------------+       +--------------------+       +--------------------+
-| Passenger Dashboard|       | Captain Dashboard  |       | Protected Routing  |
-| Booking Flow       |       | Ride Queue         |       | User/Captain Auth  |
-| Fare Options       |       | Earnings           |       | JWT Storage        |
-+---------+----------+       +---------+----------+       +---------+----------+
-          |                            |                            |
-          +----------------------------+----------------------------+
-                                       |
-                                       v
-                         +-----------------------------+
-                         |        Express API          |
-                         | Controllers / Routes        |
-                         | Validation / Auth           |
-                         +--------------+--------------+
-                                        |
-       +--------------------------------+--------------------------------+
-       |                                |                                |
-       v                                v                                v
-+--------------+              +----------------+              +----------------+
-| Ride Service |              | Map Service    |              | AI Service     |
-| Fare/Options |              | Mapbox APIs    |              | Gemini API     |
-| Dispatch     |              | Distance/ETA   |              | Fallback Logic |
-+------+-------+              +-------+--------+              +--------+-------+
-       |                              |                                |
-       v                              v                                v
-+--------------+              +----------------+              +----------------+
-| MongoDB      |              | Socket.io      |              | Stripe         |
-| Users        |<------------>| Live Dispatch  |              | Checkout       |
-| Captains     |              | Location       |              | Verification   |
-| Rides        |              | Ride Events    |              |                |
-+--------------+              +----------------+              +----------------+
+                               +--------------------------------+
+                               |          React + Vite          |
+                               |  Pages, Components, Contexts   |
+                               +---------------+----------------+
+                                               |
+                +------------------------------+------------------------------+
+                |                                                             |
+                v                                                             v
+     +-----------------------+                                     +-----------------------+
+     | Passenger Experience  |                                     | Captain Experience    |
+     | Auth, booking, fares  |                                     | Auth, queue, earnings |
+     | tracking, payment UI  |                                     | ride lifecycle UI     |
+     +-----------+-----------+                                     +-----------+-----------+
+                 |                                                             |
+                 +------------------------------+------------------------------+
+                                                |
+                         REST API calls + Socket.IO events
+                                                |
+                                                v
+                               +--------------------------------+
+                               |      Node.js HTTP Server       |
+                               |       Express + Socket.IO      |
+                               +---------------+----------------+
+                                               |
+        +--------------------------------------+--------------------------------------+
+        |                                      |                                      |
+        v                                      v                                      v
++-------------------+              +-------------------+                  +-------------------+
+| Express Routes    |              | Auth Middleware   |                  | Socket Handlers   |
+| /users, /captains |              | JWT verification  |                  | join, location,   |
+| /maps, /rides     |              | token blacklist   |                  | online/offline    |
++---------+---------+              +---------+---------+                  +---------+---------+
+          |                                  |                                      |
+          +----------------------------------+------------------+-------------------+
+                                                             |
+                                                             v
+                                           +--------------------------------+
+                                           | Controllers                   |
+                                           | Validation + request flow     |
+                                           +---------------+----------------+
+                                                           |
+              +--------------------------------------------+--------------------------------------------+
+              |                                            |                                            |
+              v                                            v                                            v
+   +-----------------------+                    +-----------------------+                    +-----------------------+
+   | Domain Services       |                    | External Integrations |                    | Realtime Dispatch     |
+   | users, captains,      |                    | Mapbox, Stripe,       |                    | targeted ride events  |
+   | rides, maps, AI       |                    | Gemini with fallback  |                    | via socket IDs        |
+   +-----------+-----------+                    +-----------+-----------+                    +-----------+-----------+
+               |                                            |                                            |
+               +----------------------------+---------------+----------------------------+---------------+
+                                            |                                            |
+                                            v                                            v
+                              +----------------------------+              +----------------------------+
+                              | MongoDB + Mongoose Models  |              | Third-party APIs           |
+                              | Users, Captains, Rides,    |              | Mapbox, Stripe Checkout,   |
+                              | Blacklisted Tokens         |              | Gemini AI                  |
+                              +----------------------------+              +----------------------------+
 ```
+
+Key flow:
+
+1. The frontend uses React Router protected pages for passenger and captain dashboards, stores logged-in user/captain state in context, and talks to the backend with Axios and Socket.IO Client.
+2. Express routes handle REST requests, `auth.middleware.js` protects user/captain endpoints, and controllers coordinate validation, services, database reads/writes, and socket notifications.
+3. Ride logic lives mostly in `ride.service.js`: fare calculation, captain matching, ride queue ranking, OTP ride start, completion, pending payment checks, and Stripe checkout verification.
+4. `socket.js` keeps user/captain socket IDs and captain availability fresh in MongoDB, while controllers send targeted events such as `new-ride`, `ride-confirmed`, `ride-started`, `ride-ended`, and payment updates.
+5. External services stay behind service modules: Mapbox for geocoding/routes, Stripe for payments, and Gemini for ride recommendations with a local fallback.
 
 ## Tech Stack
 
